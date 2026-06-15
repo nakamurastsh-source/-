@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="サイレージ">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<!-- Apple touch icons (inline SVG converted to data URI via JS below) -->
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>サイレージ在庫管理</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#fff;--bg2:#f5f5f5;--bg3:#ebebeb;
+  --text:#111;--text2:#555;--text3:#999;
+  --border:rgba(0,0,0,0.11);--border2:rgba(0,0,0,0.2);
+  --green-bg:#EAF3DE;--green-text:#27500A;
+  --blue-bg:#E6F1FB;--blue-text:#0C447C;
+  --purple-bg:#EEEDFE;--purple-text:#3C3489;
+  --amber-bg:#FAEEDA;--amber-text:#633806;
+  --pink-bg:#FBEAF0;--pink-text:#72243E;
+  --red-bg:#FCEBEB;--red-text:#A32D2D;
+  --warn-bg:#FAEEDA;--warn-text:#854F0B;
+  --teal:#0F6E56;--teal-light:#E1F5EE;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1a1a1a;--bg2:#242424;--bg3:#2e2e2e;
+  --text:#f0f0f0;--text2:#aaa;--text3:#666;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --green-bg:#1a2e10;--green-text:#9FE1CB;
+  --blue-bg:#0d2240;--blue-text:#85B7EB;
+  --purple-bg:#1a1840;--purple-text:#AFA9EC;
+  --amber-bg:#2e1f08;--amber-text:#FAC775;
+  --pink-bg:#2e1020;--pink-text:#ED93B1;
+  --red-bg:#3a1010;--red-text:#F09595;
+  --warn-bg:#2e1f08;--warn-text:#FAC775;
+  --teal:#5DCAA5;--teal-light:#04342C;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Hiragino Kaku Gothic ProN',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+.app{max-width:390px;margin:0 auto;padding:0 0 72px;min-height:100vh}
+
+/* top bar */
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:0.5px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:20}
+.top-bar-left{display:flex;flex-direction:column;gap:1px}
+.top-bar-title{font-size:15px;font-weight:700;color:var(--text)}
+.farm-switcher{display:flex;align-items:center;gap:6px;cursor:pointer}
+.farm-name{font-size:13px;font-weight:700;color:var(--teal)}
+.farm-name i{font-size:14px;vertical-align:-2px}
+.top-bar-date{font-size:11px;color:var(--text3)}
+
+/* farm select screen */
+.farm-screen{padding:16px}
+.farm-card{border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;background:var(--bg)}
+.farm-card:active{background:var(--bg2)}
+.farm-card.selected{border-color:var(--teal);border-width:1.5px}
+.farm-icon{width:40px;height:40px;border-radius:50%;background:var(--teal-light);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--teal);flex-shrink:0}
+.farm-info{flex:1;min-width:0}
+.farm-info-name{font-size:14px;font-weight:700;color:var(--text)}
+.farm-info-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.farm-add-btn{border:0.5px dashed var(--border2);border-radius:var(--radius-lg);padding:14px;text-align:center;font-size:14px;color:var(--text2);cursor:pointer;margin-bottom:10px}
+
+/* pages */
+.page{display:none;padding:12px 16px}
+.page.active{display:block}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin:16px 0 8px}
+.sec-lbl:first-child{margin-top:4px}
+
+/* forecast */
+.forecast-banner{border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.forecast-banner.ok{background:var(--teal-light)}
+.forecast-banner.warn{background:var(--warn-bg)}
+.forecast-banner.danger{background:var(--red-bg)}
+.fb-days{font-size:36px;font-weight:700;line-height:1}
+.fb-days.ok{color:var(--teal)}.fb-days.warn{color:var(--warn-text)}.fb-days.danger{color:var(--red-text)}
+.fb-label{font-size:12px;color:var(--text2);margin-bottom:2px}
+.fb-sub{font-size:11px;color:var(--text3)}
+
+/* species */
+.species-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sp-card{border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.sp-card.full{grid-column:1/-1}
+.sp-head{padding:8px 12px;font-size:12px;font-weight:700}
+.sp-head.gs1{background:#EAF3DE;color:#27500A}
+.sp-head.gs2{background:#C0DD97;color:#27500A}
+.sp-head.gs3{background:#97C459;color:#173404}
+.sp-head.sorghum{background:#D3D1C7;color:#2C2C2A}
+.sp-head.corn{background:var(--blue-bg);color:var(--blue-text)}
+.sp-body{padding:10px 12px}
+.sp-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+.sp-row .sl{color:var(--text2)}.sp-row .sv{font-weight:700;color:var(--text)}.sp-row .sv.hi{color:var(--teal)}
+
+/* storage */
+.storage-section{margin-bottom:12px}
+.storage-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius-lg);margin-bottom:6px}
+.storage-header.banker{background:var(--purple-bg)}.storage-header.stack{background:var(--amber-bg)}.storage-header.wrap{background:var(--pink-bg)}
+.storage-title{font-size:13px;font-weight:700}
+.storage-title.banker{color:var(--purple-text)}.storage-title.stack{color:var(--amber-text)}.storage-title.wrap{color:var(--pink-text)}
+.storage-count{font-size:11px;margin-left:auto;padding:2px 9px;border-radius:10px;font-weight:700}
+.storage-count.banker{background:var(--purple-bg);color:var(--purple-text);border:0.5px solid var(--purple-text)}
+.storage-count.stack{background:var(--amber-bg);color:var(--amber-text);border:0.5px solid var(--amber-text)}
+.storage-count.wrap{background:var(--pink-bg);color:var(--pink-text);border:0.5px solid var(--pink-text)}
+.storage-totals{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.st-cell{background:var(--bg2);border-radius:var(--radius);padding:10px 12px}
+.st-cell-lbl{font-size:11px;color:var(--text2);margin-bottom:2px}
+.st-cell-val{font-size:15px;font-weight:700;color:var(--text)}.st-cell-val.hi{color:var(--teal)}
+
+/* silo items */
+.silo-item{border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;background:var(--bg)}
+.silo-item-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.silo-item-name{font-size:13px;font-weight:700;color:var(--text)}
+.silo-item-sub{font-size:11px;color:var(--text3);margin-left:auto}
+.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:10px;font-weight:700}
+.b-grass{background:var(--green-bg);color:var(--green-text)}.b-corn{background:var(--blue-bg);color:var(--blue-text)}
+.silo-item-vals{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.siv{font-size:11px;color:var(--text2)}
+.siv strong{display:block;font-size:13px;font-weight:700;color:var(--text);margin-top:1px}
+.empty-sub{text-align:center;padding:.875rem;color:var(--text3);font-size:12px;border:0.5px dashed var(--border2);border-radius:var(--radius);margin-bottom:8px}
+
+/* forms */
+.seg{display:flex;border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+.seg-btn{flex:1;padding:11px 4px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text2);text-align:center;font-weight:500}
+.seg-btn.active{background:var(--text);color:var(--bg);font-weight:700}
+.form-block{margin-bottom:12px}
+.form-block label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:600}
+input,select,textarea{font-size:16px;border:0.5px solid var(--border2);border-radius:var(--radius);padding:11px 12px;background:var(--bg);color:var(--text);width:100%;-webkit-appearance:none;appearance:none;font-family:inherit}
+input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.form-row-2 .form-block{margin-bottom:0}
+.result-box{background:var(--bg2);border-radius:var(--radius);padding:12px;margin:12px 0}
+.res-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:13px}
+.res-row .rl{color:var(--text2)}.res-row .rv{font-weight:700;color:var(--text)}.res-row .rv.hi{font-size:15px;color:var(--teal)}
+.divider{border:none;border-top:0.5px solid var(--border);margin:6px 0}
+.btn-row{display:flex;gap:8px;margin-top:4px}
+.btn{padding:13px 16px;border-radius:var(--radius);font-size:14px;cursor:pointer;border:0.5px solid var(--border2);background:var(--bg);color:var(--text);flex:1;text-align:center;font-weight:600}
+.btn-primary{background:var(--text);color:var(--bg);border-color:var(--text)}
+.btn-danger{color:#c0392b;border-color:#c0392b;flex:0;padding:13px 14px}
+.btn-sm{padding:8px 12px;font-size:13px}
+.success-msg{font-size:12px;color:var(--teal);text-align:center;padding:6px 0;font-weight:600}
+
+/* livestock */
+.livestock-card{border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px;background:var(--bg)}
+.lc-title{font-size:13px;font-weight:700;margin-bottom:10px}
+
+/* visit */
+.visit-card{border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;background:var(--bg)}
+.visit-date{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.visit-rows{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.vr{font-size:11px;color:var(--text2)}
+.vr strong{display:block;font-size:13px;font-weight:700;color:var(--text);margin-top:1px}
+.visit-note{font-size:12px;color:var(--text3);margin-top:6px;padding-top:6px;border-top:0.5px solid var(--border)}
+
+/* modal sheet */
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:flex-end;justify-content:center}
+.sheet-overlay.open{display:flex}
+.sheet{background:var(--bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:390px;padding:20px 16px 36px;max-height:88vh;overflow-y:auto}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sheet-title{font-size:15px;font-weight:700;color:var(--text)}
+.sheet-close{border:none;background:none;font-size:22px;color:var(--text2);cursor:pointer;padding:4px}
+
+/* bottom nav */
+.bottom-nav{display:flex;border-top:0.5px solid var(--border);background:var(--bg);position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;z-index:10}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;border:none;background:none;cursor:pointer;color:var(--text3);font-size:10px;font-weight:600}
+.nav-btn.active{color:var(--text)}
+.nav-btn i{font-size:22px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="top-bar">
+  <div class="top-bar-left">
+    <span class="top-bar-title">🌾 サイレージ在庫</span>
+    <div class="farm-switcher" onclick="openFarmSheet()">
+      <span class="farm-name" id="current-farm-name"><i class="ti ti-building-farm"></i> 農場を選択</span>
+      <i class="ti ti-chevron-down" style="font-size:14px;color:var(--text3)"></i>
+    </div>
+  </div>
+  <span class="top-bar-date" id="today-lbl"></span>
+</div>
+
+<!-- ===== HOME ===== -->
+<div id="page-home" class="page active">
+  <div id="no-farm-msg" style="text-align:center;padding:3rem 1rem;color:var(--text3);font-size:13px;display:none">
+    <i class="ti ti-building-farm" style="font-size:40px;display:block;margin-bottom:12px;color:var(--text3)"></i>
+    農場を選択または追加してください
+    <br><br>
+    <button class="btn btn-primary" style="display:inline-block;flex:0;width:auto;padding:12px 24px" onclick="openFarmSheet()">農場を選択</button>
+  </div>
+  <div id="home-content">
+    <div class="sec-lbl">在庫日数予測</div>
+    <div id="forecast-gs"></div>
+    <div id="forecast-dcs"></div>
+    <div class="sec-lbl">種類別在庫</div>
+    <div id="species-cards"></div>
+    <div class="sec-lbl">貯蔵方法別在庫</div>
+    <div id="home-storage"></div>
+  </div>
+</div>
+
+<!-- ===== LIVESTOCK ===== -->
+<div id="page-livestock" class="page">
+  <div class="sec-lbl">月別 給与計画（12か月）</div>
+  <p style="font-size:12px;color:var(--text2);margin-bottom:4px">給与量は<strong>現物（生重量）ベース</strong>で入力してください。農場ごとに保存されます。</p>
+
+  <!-- silage type tab selector -->
+  <div class="seg" id="lv-seg" style="margin-top:10px">
+    <button class="seg-btn active" onclick="selectLvType('gs1',0)">GS1</button>
+    <button class="seg-btn" onclick="selectLvType('gs2',1)">GS2</button>
+    <button class="seg-btn" onclick="selectLvType('gs3',2)">GS3</button>
+    <button class="seg-btn" onclick="selectLvType('dcs',3)">DCS</button>
+  </div>
+
+  <!-- GS1 -->
+  <div id="lv-panel-gs1">
+    <div style="background:#EAF3DE;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:8px 12px;font-size:12px;font-weight:700;color:#27500A;margin-bottom:0">🌿 GS1（1番草）— 月別頭数・給与量</div>
+    <div id="lv-table-gs1" style="overflow-x:auto;border:0.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-bottom:10px"></div>
+    <div class="result-box" id="lv-gs1-result" style="display:none"></div>
+  </div>
+  <!-- GS2 -->
+  <div id="lv-panel-gs2" style="display:none">
+    <div style="background:#C0DD97;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:8px 12px;font-size:12px;font-weight:700;color:#27500A;margin-bottom:0">🌿 GS2（2番草）— 月別頭数・給与量</div>
+    <div id="lv-table-gs2" style="overflow-x:auto;border:0.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-bottom:10px"></div>
+    <div class="result-box" id="lv-gs2-result" style="display:none"></div>
+  </div>
+  <!-- GS3 -->
+  <div id="lv-panel-gs3" style="display:none">
+    <div style="background:#97C459;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:8px 12px;font-size:12px;font-weight:700;color:#173404;margin-bottom:0">🌿 GS3（3番草）— 月別頭数・給与量</div>
+    <div id="lv-table-gs3" style="overflow-x:auto;border:0.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-bottom:10px"></div>
+    <div class="result-box" id="lv-gs3-result" style="display:none"></div>
+  </div>
+  <!-- DCS -->
+  <div id="lv-panel-dcs" style="display:none">
+    <div style="background:var(--blue-bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:8px 12px;font-size:12px;font-weight:700;color:var(--blue-text);margin-bottom:0">🌽 DCS（デントコーン）— 月別頭数・給与量</div>
+    <div id="lv-table-dcs" style="overflow-x:auto;border:0.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-bottom:10px"></div>
+    <div class="result-box" id="lv-dcs-result" style="display:none"></div>
+  </div>
+
+  <div class="btn-row" style="margin-bottom:8px">
+    <button class="btn btn-primary" onclick="saveLivestock()">💾 保存する</button>
+  </div>
+  <div id="lv-msg" class="success-msg"></div>
+</div>
+
+<!-- ===== VISIT ===== -->
+<div id="page-visit" class="page">
+  <div class="sec-lbl">訪問日記録を追加</div>
+  <div class="form-block"><label>訪問日</label><input type="date" id="vis-date"></div>
+  <div class="form-block"><label>対象貯蔵庫</label><select id="vis-silo"></select></div>
+  <div id="vis-fields"></div>
+  <div id="vis-calc-result" class="result-box" style="display:none"></div>
+  <div class="form-block"><label>メモ</label><input type="text" id="vis-note" placeholder="気になる点・品質など"></div>
+  <div id="vis-msg" class="success-msg"></div>
+  <div class="btn-row">
+    <button class="btn" onclick="calcVisit()">計算</button>
+    <button class="btn btn-primary" onclick="saveVisit()">記録する</button>
+  </div>
+  <div class="sec-lbl" style="margin-top:20px">訪問記録履歴</div>
+  <div id="visit-history"></div>
+</div>
+
+<!-- ===== ADD ===== -->
+<div id="page-add" class="page">
+  <div class="sec-lbl">貯蔵方法を選択</div>
+  <div class="seg">
+    <button class="seg-btn active" onclick="selectType('banker',0)">バンカー</button>
+    <button class="seg-btn" onclick="selectType('stack',1)">スタック</button>
+    <button class="seg-btn" onclick="selectType('wrap',2)">コンビラップ</button>
+  </div>
+  <div id="form-banker">
+    <div class="form-block"><label>名称</label><input id="bk-name" placeholder="バンカーサイロ #1" type="text"></div>
+    <div class="form-block"><label>サイレージ種類</label><select id="bk-silage" onchange="toggleVarietyBlock('bk')">
+      <option value="GS1">GS1（1番草）</option><option value="GS2">GS2（2番草）</option>
+      <option value="GS3">GS3（3番草）</option><option value="DCS">DCS（デントコーン）</option>
+      <option value="sorghum">ソルガム</option>
+    </select></div>
+    <div class="form-block" id="bk-variety-block" style="display:none"><label>品種の生育日数（日）</label>
+      <input type="number" id="bk-variety-days" inputmode="numeric" placeholder="例: 120">
+    </div>
+    <div class="form-block"><label>草種</label><select id="bk-grass">
+      <option value="">— 選択してください —</option>
+      <option value="orchard">オーチャード</option>
+      <option value="timothy">チモシー</option>
+      <option value="orch_tim">オーチャード＋チモシー</option>
+      <option value="orch_leg">オーチャード＋マメ科</option>
+      <option value="tim_leg">チモシー＋マメ科</option>
+    </select></div>
+    <div class="form-row-2">
+      <div class="form-block"><label>播種日</label><input type="date" id="bk-seeded" onchange="calcDays('bk')"></div>
+      <div class="form-block"><label>刈り取り日</label><input type="date" id="bk-harvest" onchange="calcDays('bk')"></div>
+    </div>
+    <div class="form-block">
+      <label>生育日数（刈り取り日 − 播種日）</label>
+      <div id="bk-growdays" style="padding:10px 12px;background:var(--bg2);border-radius:var(--radius);font-size:14px;font-weight:700;color:var(--teal)">—</div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>開封日</label><input type="date" id="bk-opened" onchange="calcDays('bk')"></div>
+      <div class="form-block"><label>貯蔵日数（開封日 − 刈り取り日）</label>
+        <div id="bk-storedays" style="padding:10px 12px;background:var(--bg2);border-radius:var(--radius);font-size:14px;font-weight:700;color:var(--purple-text)">—</div>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>横 (m)</label><input type="number" id="bk-width" inputmode="decimal" placeholder="8"></div>
+      <div class="form-block"><label>高さ (m)</label><input type="number" id="bk-h" inputmode="decimal" placeholder="2.5"></div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>1パネル長さ (m)</label><input type="number" id="bk-plen" inputmode="decimal" placeholder="3"></div>
+      <div class="form-block"><label>総パネル枚数</label><input type="number" id="bk-panels" inputmode="numeric" placeholder="20"></div>
+    </div>
+    <div class="form-block"><label>充填品質プリセット</label>
+      <select id="bk-quality" onchange="applyDensity('bk')">
+        <option value="">手動入力</option>
+        <option value="260">DCS 非常に良い（260 kgDM/m³）</option>
+        <option value="240">DCS 良い / GS 非常に良い（240）</option>
+        <option value="220">DCS 普通 / GS 良い（220）</option>
+        <option value="200">DCS 悪い / GS 普通（200）</option>
+        <option value="180">DCS かなり悪い / GS 悪い（180）</option>
+        <option value="150">GS かなり悪い（150）</option>
+      </select>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>密度 (kgDM/m³)</label><input type="number" id="bk-density" inputmode="numeric" placeholder="220"></div>
+      <div class="form-block"><label>DM% (乾物率)</label><input type="number" id="bk-dm" inputmode="decimal" placeholder="32.5"></div>
+    </div>
+    <div class="form-block"><label>ロス率 (%)</label><input type="number" id="bk-loss" inputmode="decimal" value="5" style="max-width:140px"></div>
+    <div id="bk-result" class="result-box" style="display:none"></div>
+    <div id="bk-msg" class="success-msg"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="calcForm('bk')">計算</button>
+      <button class="btn btn-primary" onclick="saveForm('bk')">登録する</button>
+    </div>
+  </div>
+  <div id="form-stack" style="display:none">
+    <div class="form-block"><label>名称</label><input id="st-name" placeholder="スタックサイロ #1" type="text"></div>
+    <div class="form-block"><label>サイレージ種類</label><select id="st-silage" onchange="toggleVarietyBlock('st')">
+      <option value="GS1">GS1</option><option value="GS2">GS2</option><option value="GS3">GS3</option>
+      <option value="DCS">DCS</option><option value="sorghum">ソルガム</option>
+    </select></div>
+    <div class="form-block" id="st-variety-block" style="display:none"><label>品種の生育日数（日）</label>
+      <input type="number" id="st-variety-days" inputmode="numeric" placeholder="例: 120">
+    </div>
+    <div class="form-block"><label>草種</label><select id="st-grass">
+      <option value="">— 選択してください —</option>
+      <option value="orchard">オーチャード</option>
+      <option value="timothy">チモシー</option>
+      <option value="orch_tim">オーチャード＋チモシー</option>
+      <option value="orch_leg">オーチャード＋マメ科</option>
+      <option value="tim_leg">チモシー＋マメ科</option>
+    </select></div>
+    <div class="form-row-2">
+      <div class="form-block"><label>播種日</label><input type="date" id="st-seeded" onchange="calcDays('st')"></div>
+      <div class="form-block"><label>刈り取り日</label><input type="date" id="st-harvest" onchange="calcDays('st')"></div>
+    </div>
+    <div class="form-block">
+      <label>生育日数（刈り取り日 − 播種日）</label>
+      <div id="st-growdays" style="padding:10px 12px;background:var(--bg2);border-radius:var(--radius);font-size:14px;font-weight:700;color:var(--teal)">—</div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>開封日</label><input type="date" id="st-opened" onchange="calcDays('st')"></div>
+      <div class="form-block"><label>貯蔵日数（開封日 − 刈り取り日）</label>
+        <div id="st-storedays" style="padding:10px 12px;background:var(--bg2);border-radius:var(--radius);font-size:14px;font-weight:700;color:var(--purple-text)">—</div>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>上面幅 (m)</label><input type="number" id="st-tw" inputmode="decimal" placeholder="4"></div>
+      <div class="form-block"><label>底面幅 (m)</label><input type="number" id="st-bw" inputmode="decimal" placeholder="8"></div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>高さ (m)</label><input type="number" id="st-h" inputmode="decimal" placeholder="3"></div>
+      <div class="form-block"><label>総長さ (m)</label><input type="number" id="st-len" inputmode="decimal" placeholder="50"></div>
+    </div>
+    <div class="form-block"><label>形状係数</label>
+      <select id="st-coef">
+        <option value="0.75">0.75（角丸め大）</option><option value="0.77">0.77</option>
+        <option value="0.80" selected>0.80（角丸め小）</option>
+      </select>
+    </div>
+    <div class="form-block"><label>充填品質プリセット</label>
+      <select id="st-quality" onchange="applyDensity('st')">
+        <option value="">手動入力</option>
+        <option value="260">DCS 非常に良い（260）</option><option value="240">DCS 良い / GS 非常に良い（240）</option>
+        <option value="220">DCS 普通 / GS 良い（220）</option><option value="200">DCS 悪い / GS 普通（200）</option>
+        <option value="180">DCS かなり悪い / GS 悪い（180）</option><option value="150">GS かなり悪い（150）</option>
+      </select>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>密度 (kgDM/m³)</label><input type="number" id="st-density" inputmode="numeric" placeholder="200"></div>
+      <div class="form-block"><label>DM% (乾物率)</label><input type="number" id="st-dm" inputmode="decimal" placeholder="30"></div>
+    </div>
+    <div class="form-block"><label>ロス率 (%)</label><input type="number" id="st-loss" inputmode="decimal" value="5" style="max-width:140px"></div>
+    <div id="st-result" class="result-box" style="display:none"></div>
+    <div id="st-msg" class="success-msg"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="calcForm('st')">計算</button>
+      <button class="btn btn-primary" onclick="saveForm('st')">登録する</button>
+    </div>
+  </div>
+  <div id="form-wrap" style="display:none">
+    <div class="form-block"><label>名称</label><input id="wr-name" placeholder="コンビラップ 2024" type="text"></div>
+    <div class="form-block"><label>サイレージ種類</label><select id="wr-silage" onchange="toggleVarietyBlock('wr')">
+      <option value="GS1">GS1</option><option value="GS2">GS2</option><option value="GS3">GS3</option>
+      <option value="DCS">DCS</option><option value="sorghum">ソルガム</option>
+    </select></div>
+    <div class="form-block"><label>草種</label><select id="wr-grass">
+      <option value="">— 選択してください —</option>
+      <option value="orchard">オーチャード</option>
+      <option value="timothy">チモシー</option>
+      <option value="orch_tim">オーチャード＋チモシー</option>
+      <option value="orch_leg">オーチャード＋マメ科</option>
+      <option value="tim_leg">チモシー＋マメ科</option>
+    </select></div>
+    <div class="form-row-2">
+      <div class="form-block"><label>刈り取り日</label><input type="date" id="wr-harvest"></div>
+      <div class="form-block"><label>開封日</label><input type="date" id="wr-opened"></div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>1個あたり重量 (kg)</label><input type="number" id="wr-wt" inputmode="numeric" placeholder="600"></div>
+      <div class="form-block"><label>総個数</label><input type="number" id="wr-count" inputmode="numeric" placeholder="50"></div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-block"><label>DM% (乾物率)</label><input type="number" id="wr-dm" inputmode="decimal" placeholder="35"></div>
+      <div class="form-block"><label>ロス率 (%)</label><input type="number" id="wr-loss" inputmode="decimal" value="3"></div>
+    </div>
+    <div id="wr-result" class="result-box" style="display:none"></div>
+    <div id="wr-msg" class="success-msg"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="calcForm('wr')">計算</button>
+      <button class="btn btn-primary" onclick="saveForm('wr')">登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LIST ===== -->
+<div id="page-list" class="page">
+  <div class="sec-lbl">登録済み貯蔵庫</div>
+  <div id="list-silos"></div>
+</div>
+
+<!-- ===== FARM SHEET ===== -->
+<div class="sheet-overlay" id="farm-sheet">
+  <div class="sheet">
+    <div class="sheet-header">
+      <span class="sheet-title">農場を選択</span>
+      <button class="sheet-close" onclick="closeFarmSheet()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="farm-list"></div>
+    <div style="margin-top:12px;border-top:0.5px solid var(--border);padding-top:12px">
+      <div class="sec-lbl" style="margin-top:0">新しい農場を追加</div>
+      <div class="form-block"><label>農場名</label><input id="new-farm-name" type="text" placeholder="例：〇〇牧場"></div>
+      <div class="form-block"><label>メモ（任意）</label><input id="new-farm-note" type="text" placeholder="場所、担当者など"></div>
+      <div id="farm-msg" class="success-msg"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="addFarm()"><i class="ti ti-plus"></i> 追加する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT SHEET ===== -->
+<div class="sheet-overlay" id="edit-sheet">
+  <div class="sheet">
+    <div class="sheet-header">
+      <span class="sheet-title" id="edit-title">在庫を編集</span>
+      <button class="sheet-close" onclick="closeEdit()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="edit-form-body"></div>
+    <div id="edit-calc-result" class="result-box" style="display:none;margin-bottom:12px"></div>
+    <div id="edit-msg" class="success-msg"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="calcEdit()"><i class="ti ti-calculator"></i> 再計算</button>
+      <button class="btn btn-primary" onclick="saveEdit()"><i class="ti ti-check"></i> 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FARM EDIT SHEET ===== -->
+<div class="sheet-overlay" id="farm-edit-sheet">
+  <div class="sheet">
+    <div class="sheet-header">
+      <span class="sheet-title">農場を編集</span>
+      <button class="sheet-close" onclick="closeFarmEdit()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-block"><label>農場名</label><input id="fe-name" type="text" placeholder="例：〇〇牧場"></div>
+    <div class="form-block"><label>メモ（任意）</label><input id="fe-note" type="text" placeholder="場所、担当者など"></div>
+    <div id="fe-msg" class="success-msg"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveFarmEdit()"><i class="ti ti-check"></i> 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- iOS install hint banner -->
+<div id="ios-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:358px;background:#1a1a1a;color:#fff;border-radius:14px;padding:14px 16px;z-index:200;align-items:flex-start;gap:12px;box-shadow:0 4px 24px rgba(0,0,0,0.3)">
+  <span style="font-size:28px;flex-shrink:0">🌾</span>
+  <div style="flex:1;font-size:13px;line-height:1.5">
+    <div style="font-weight:700;margin-bottom:4px">ホーム画面に追加するには</div>
+    Safariの <strong>共有ボタン</strong>（□↑）をタップして「<strong>ホーム画面に追加</strong>」を選んでください
+  </div>
+  <button id="ios-close-btn" style="border:none;background:none;color:#aaa;font-size:20px;cursor:pointer;flex-shrink:0;padding:0">✕</button>
+</div>
+
+<!-- Android install banner -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:358px;background:#1a1a1a;color:#fff;border-radius:14px;padding:14px 16px;z-index:200;align-items:center;gap:12px;box-shadow:0 4px 24px rgba(0,0,0,0.3)">
+  <span style="font-size:28px;flex-shrink:0">🌾</span>
+  <div style="flex:1;font-size:13px">
+    <div style="font-weight:700;margin-bottom:2px">アプリとして追加</div>
+    <div style="color:#aaa">ホーム画面にインストールして使えます</div>
+  </div>
+  <button id="pwa-install-btn" style="border:none;background:var(--teal,#0F6E56);color:#fff;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">追加</button>
+  <button id="pwa-close-btn" style="border:none;background:none;color:#aaa;font-size:20px;cursor:pointer;flex-shrink:0;padding:0">✕</button>
+</div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('home',0)"><span style="font-size:22px">🏠</span><span>ホーム</span></button>
+  <button class="nav-btn" onclick="showPage('livestock',1)"><span style="font-size:22px">🐄</span><span>給与設定</span></button>
+  <button class="nav-btn" onclick="showPage('visit',2)"><span style="font-size:22px">📋</span><span>訪問記録</span></button>
+  <button class="nav-btn" onclick="showPage('add',3)"><span style="font-size:22px">➕</span><span>新規登録</span></button>
+  <button class="nav-btn" onclick="showPage('list',4)"><span style="font-size:22px">📦</span><span>一覧</span></button>
+</div>
+</div>
+
+<script>
+const SK_FARMS='silage_farms_v4';
+const SK_DATA='silage_data_v4';
+
+let farms=[];   // [{id,name,note}]
+let allData={};  // {farmId:{silos:[],lv:{},visits:[]}}
+let currentFarmId=null;
+
+function load(){
+  try{farms=JSON.parse(localStorage.getItem(SK_FARMS)||'[]');}catch(e){farms=[];}
+  try{allData=JSON.parse(localStorage.getItem(SK_DATA)||'{}');}catch(e){allData={};}
+  currentFarmId=localStorage.getItem('silage_current_farm')||null;
+  if(currentFarmId&&!farms.find(f=>f.id==currentFarmId))currentFarmId=null;
+}
+function persist(){
+  localStorage.setItem(SK_FARMS,JSON.stringify(farms));
+  localStorage.setItem(SK_DATA,JSON.stringify(allData));
+  if(currentFarmId)localStorage.setItem('silage_current_farm',currentFarmId);
+}
+function farmData(fid){
+  fid=fid||currentFarmId;
+  if(!fid)return{silos:[],lv:{},visits:[]};
+  if(!allData[fid])allData[fid]={silos:[],lv:{},visits:[]};
+  return allData[fid];
+}
+function silos(){return farmData().silos||[];}
+function lv(){return farmData().lv||{};}
+function visits(){return farmData().visits||[];}
+
+function fmt(v,d){return(isNaN(v)||!isFinite(v))?'—':v.toFixed(d);}
+function fmtN(v){return isNaN(v)||!isFinite(v)?'—':Math.round(v).toLocaleString();}
+function isGS(s){return['GS1','GS2','GS3','sorghum'].includes(s);}
+const TYPE_META={banker:{label:'バンカーサイロ',cls:'banker'},stack:{label:'スタックサイロ',cls:'stack'},wrap:{label:'コンビラップ',cls:'wrap'}};
+
+/* ---- farm management ---- */
+function openFarmSheet(){
+  renderFarmList();
+  document.getElementById('farm-sheet').classList.add('open');
+}
+function closeFarmSheet(){document.getElementById('farm-sheet').classList.remove('open');}
+
+function renderFarmList(){
+  const el=document.getElementById('farm-list');
+  if(!farms.length){el.innerHTML='<div class="empty-sub">農場がまだ登録されていません</div>';return;}
+  el.innerHTML=farms.map(f=>`
+    <div class="farm-card${f.id==currentFarmId?' selected':''}" onclick="selectFarm('${f.id}')">
+      <div class="farm-icon"><i class="ti ti-building-farm"></i></div>
+      <div class="farm-info">
+        <div class="farm-info-name" id="farm-label-${f.id}">${f.name}</div>
+        <div class="farm-info-sub">${f.note||'メモなし'} · 貯蔵庫${(farmData(f.id).silos||[]).length}基</div>
+      </div>
+      ${f.id==currentFarmId?'<i class="ti ti-check" style="color:var(--teal);font-size:18px"></i>':''}
+      <button onclick="event.stopPropagation();openFarmEdit('${f.id}')" style="border:none;background:none;color:var(--text2);font-size:18px;cursor:pointer;padding:4px"><i class="ti ti-edit"></i></button>
+      <button onclick="event.stopPropagation();deleteFarm('${f.id}')" style="border:none;background:none;color:#c0392b;font-size:18px;cursor:pointer;padding:4px"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+
+function addFarm(){
+  const name=document.getElementById('new-farm-name').value.trim();
+  if(!name){document.getElementById('farm-msg').textContent='農場名を入力してください';return;}
+  const id='f'+Date.now();
+  farms.push({id,name,note:document.getElementById('new-farm-note').value.trim()});
+  allData[id]={silos:[],lv:{},visits:[]};
+  persist();
+  document.getElementById('new-farm-name').value='';
+  document.getElementById('new-farm-note').value='';
+  document.getElementById('farm-msg').textContent='追加しました ✓';
+  setTimeout(()=>document.getElementById('farm-msg').textContent='',2000);
+  renderFarmList();
+}
+
+function selectFarm(id){
+  currentFarmId=id;
+  persist();
+  const f=farms.find(x=>x.id===id);
+  document.getElementById('current-farm-name').innerHTML=`<i class="ti ti-building-farm"></i> ${f.name}`;
+  closeFarmSheet();
+  renderHome();
+}
+
+function deleteFarm(id){
+  if(!confirm('この農場と全データを削除しますか？'))return;
+  farms=farms.filter(f=>f.id!==id);
+  delete allData[id];
+  if(currentFarmId===id){currentFarmId=null;document.getElementById('current-farm-name').innerHTML='<i class="ti ti-building-farm"></i> 農場を選択';}
+  persist();
+  renderFarmList();
+  renderHome();
+}
+
+/* ---- navigation ---- */
+function showPage(p,i){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach((el,j)=>el.classList.toggle('active',j===i));
+  if(p==='home')renderHome();
+  if(p==='list')renderList();
+  if(p==='visit')renderVisitPage();
+  if(p==='livestock')fillLivestockForm();
+}
+function selectType(t,i){
+  ['banker','stack','wrap'].forEach((n,j)=>document.getElementById('form-'+n).style.display=j===i?'block':'none');
+  document.querySelectorAll('.seg-btn').forEach((el,j)=>el.classList.toggle('active',j===i));
+}
+function applyDensity(pfx){const v=document.getElementById(pfx+'-quality').value;if(v)document.getElementById(pfx+'-density').value=v;}
+
+/* ---- silo calculations ---- */
+function calcBK(){
+  const w=+document.getElementById('bk-width').value||0,h=+document.getElementById('bk-h').value||0;
+  const plen=+document.getElementById('bk-plen').value||0,panels=+document.getElementById('bk-panels').value||0;
+  const den=+document.getElementById('bk-density').value||0,dm=+document.getElementById('bk-dm').value||0;
+  const loss=+document.getElementById('bk-loss').value||0,vol=plen*panels*w*h;
+  const dmKg=vol*den,actKg=dm>0?dmKg/(dm/100):0;
+  return{vol,dmKg,actKg,netDM:dmKg*(1-loss/100),netAct:actKg*(1-loss/100),dm,loss,plen,panels,w,h,den};
+}
+function calcST(){
+  const tw=+document.getElementById('st-tw').value||0,bw=+document.getElementById('st-bw').value||0;
+  const h=+document.getElementById('st-h').value||0,len=+document.getElementById('st-len').value||0;
+  const coef=+document.getElementById('st-coef').value||0.8,den=+document.getElementById('st-density').value||0;
+  const dm=+document.getElementById('st-dm').value||0,loss=+document.getElementById('st-loss').value||0;
+  const vol=(tw+bw)/2*h*len*coef,dmKg=vol*den,actKg=dm>0?dmKg/(dm/100):0;
+  return{vol,dmKg,actKg,netDM:dmKg*(1-loss/100),netAct:actKg*(1-loss/100),dm,loss,tw,bw,h,len,coef,den};
+}
+function calcWR(){
+  const wt=+document.getElementById('wr-wt').value||0,cnt=+document.getElementById('wr-count').value||0;
+  const dm=+document.getElementById('wr-dm').value||0,loss=+document.getElementById('wr-loss').value||0;
+  const actKg=wt*cnt,dmKg=actKg*(dm/100);
+  return{actKg,dmKg,netAct:actKg*(1-loss/100),netDM:dmKg*(1-loss/100),perDM:cnt>0?dmKg/cnt:0,dm,loss,wt,cnt};
+}
+function resultHTML(r,isWrap){
+  if(isWrap)return`<div class="res-row"><span class="rl">合計現物（ロス前）</span><span class="rv">${fmt(r.actKg/1000,2)} t</span></div>
+    <div class="res-row"><span class="rl">1個あたり乾物量</span><span class="rv">${fmt(r.perDM,1)} kgDM</span></div>
+    <hr class="divider">
+    <div class="res-row"><span class="rl">現物（ロス差引）</span><span class="rv hi">${fmt(r.netAct/1000,2)} t</span></div>
+    <div class="res-row"><span class="rl">乾物（ロス差引）</span><span class="rv hi">${fmt(r.netDM/1000,2)} t DM</span></div>`;
+  return`<div class="res-row"><span class="rl">容積</span><span class="rv">${fmt(r.vol,1)} m³</span></div>
+    <div class="res-row"><span class="rl">乾物（ロス前）</span><span class="rv">${fmt(r.dmKg/1000,2)} t DM</span></div>
+    <div class="res-row"><span class="rl">現物（ロス前）</span><span class="rv">${fmt(r.actKg/1000,2)} t</span></div>
+    <hr class="divider">
+    <div class="res-row"><span class="rl">現物（ロス差引）</span><span class="rv hi">${fmt(r.netAct/1000,2)} t</span></div>
+    <div class="res-row"><span class="rl">乾物（ロス差引）</span><span class="rv hi">${fmt(r.netDM/1000,2)} t DM</span></div>`;
+}
+function calcForm(pfx){
+  const r=pfx==='bk'?calcBK():pfx==='st'?calcST():calcWR();
+  const el=document.getElementById(pfx+'-result');
+  el.style.display='block';el.innerHTML=resultHTML(r,pfx==='wr');return r;
+}
+/* ---- date day calculators ---- */
+function diffDays(d1,d2){
+  if(!d1||!d2)return null;
+  const ms=new Date(d2)-new Date(d1);
+  return Math.round(ms/86400000);
+}
+function calcDays(pfx){
+  const seeded=document.getElementById(pfx+'-seeded')?.value||'';
+  const harvest=document.getElementById(pfx+'-harvest')?.value||'';
+  const opened=document.getElementById(pfx+'-opened')?.value||'';
+  const grow=diffDays(seeded,harvest);
+  const store=diffDays(harvest,opened);
+  const gEl=document.getElementById(pfx+'-growdays');
+  const sEl=document.getElementById(pfx+'-storedays');
+  if(gEl)gEl.textContent=grow!=null?grow+'日':'—';
+  if(sEl)sEl.textContent=store!=null?store+'日':'—';
+}
+function toggleVarietyBlock(pfx){
+  const sel=document.getElementById(pfx+'-silage');
+  const block=document.getElementById(pfx+'-variety-block');
+  if(block)block.style.display=sel&&sel.value==='DCS'?'block':'none';
+}
+
+function saveForm(pfx){
+  if(!currentFarmId){alert('先に農場を選択してください');openFarmSheet();return;}
+  const r=calcForm(pfx);
+  let s={id:Date.now(),ts:Date.now()};
+  const seeded=document.getElementById(pfx+'-seeded')?.value||'';
+  const harvest=document.getElementById(pfx+'-harvest')?.value||'';
+  const opened=document.getElementById(pfx+'-opened')?.value||'';
+  const varietyDays=document.getElementById(pfx+'-variety-days')?.value||'';
+  const growDays=diffDays(seeded,harvest);
+  const storeDays=diffDays(harvest,opened);
+  if(pfx==='bk')s={...s,type:'banker',name:document.getElementById('bk-name').value||'バンカーサイロ',
+    silage:document.getElementById('bk-silage').value,
+    grass:document.getElementById('bk-grass').value,
+    seeded,harvest,opened,varietyDays,growDays,storeDays,
+    dm:r.dm,loss:r.loss,
+    plen:r.plen,panels:r.panels,width:r.w,h:r.h,density:r.den,netDM:r.netDM,netAct:r.netAct};
+  else if(pfx==='st')s={...s,type:'stack',name:document.getElementById('st-name').value||'スタックサイロ',
+    silage:document.getElementById('st-silage').value,
+    grass:document.getElementById('st-grass').value,
+    seeded,harvest,opened,varietyDays,growDays,storeDays,
+    dm:r.dm,loss:r.loss,
+    tw:r.tw,bw:r.bw,h:r.h,len:r.len,coef:r.coef,density:r.den,netDM:r.netDM,netAct:r.netAct};
+  else s={...s,type:'wrap',name:document.getElementById('wr-name').value||'コンビラップ',
+    silage:document.getElementById('wr-silage').value,
+    grass:document.getElementById('wr-grass').value,
+    seeded,harvest,opened,varietyDays,growDays,storeDays,
+    dm:r.dm,loss:r.loss,
+    wt:r.wt,count:r.cnt,netDM:r.netDM,netAct:r.netAct};
+  farmData().silos.push(s);persist();
+  const msg=document.getElementById(pfx+'-msg');
+  msg.textContent='登録しました ✓';setTimeout(()=>msg.textContent='',2500);
+}
+function deleteSilo(id){
+  const fd=farmData();fd.silos=fd.silos.filter(s=>s.id!==id);persist();renderList();renderHome();
+}
+
+/* ---- livestock ---- */
+/* ---- livestock (monthly) ---- */
+const LV_TYPES=['gs1','gs2','gs3','dcs'];
+const LV_MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+let currentLvType='gs1';
+
+// 今月から12か月分の月インデックス配列 (0=1月…11=12月)
+function lvMonthOrder(){
+  const start=new Date().getMonth();
+  return Array.from({length:12},(_,i)=>(start+i)%12);
+}
+
+function selectLvType(t,i){
+  currentLvType=t;
+  LV_TYPES.forEach(n=>document.getElementById('lv-panel-'+n).style.display=n===t?'block':'none');
+  document.querySelectorAll('#lv-seg .seg-btn').forEach((el,j)=>el.classList.toggle('active',j===i));
+}
+
+function buildLvTable(pfx){
+  const l=lv();
+  const data=l['monthly_'+pfx]||Array(12).fill(null).map(()=>({mh:'',ma:'',dh:'',da:''}));
+  const order=lvMonthOrder();
+  const curMi=new Date().getMonth();
+  const inp=(mi,field,val,ph)=>
+    `<input type="number" inputmode="decimal" id="lv-${pfx}-${mi}-${field}"
+      value="${val!=null&&val!==''?val:''}" placeholder="${ph}"
+      style="width:58px;font-size:13px;padding:5px 3px;border:0.5px solid var(--border2);border-radius:5px;background:var(--bg);color:var(--text);text-align:center"
+      oninput="updateLvDaily('${pfx}',${mi})" onchange="onLvChange('${pfx}',${mi},'${field}',this.value)">`;
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:var(--bg2)">
+      <th style="padding:7px 6px;text-align:left;font-weight:600;color:var(--text2);white-space:nowrap;position:sticky;left:0;background:var(--bg2);z-index:1">月</th>
+      <th style="padding:7px 3px;text-align:center;font-weight:600;color:var(--text2);white-space:nowrap">搾乳<br>頭数</th>
+      <th style="padding:7px 3px;text-align:center;font-weight:600;color:var(--text2);white-space:nowrap">搾乳給与<br><span style="font-weight:400">(kg/頭/日)</span></th>
+      <th style="padding:7px 3px;text-align:center;font-weight:600;color:var(--text2);white-space:nowrap">乾乳<br>頭数</th>
+      <th style="padding:7px 3px;text-align:center;font-weight:600;color:var(--text2);white-space:nowrap">乾乳給与<br><span style="font-weight:400">(kg/頭/日)</span></th>
+      <th style="padding:7px 3px;text-align:center;font-weight:600;color:var(--text2);white-space:nowrap">日消費<br><span style="font-weight:400">(kg)</span></th>
+    </tr></thead><tbody>`;
+  order.forEach((mi,rowIdx)=>{
+    const row=data[mi]||{};
+    const daily=(+row.mh||0)*(+row.ma||0)+(+row.dh||0)*(+row.da||0);
+    const isNow=mi===curMi;
+    const rowBg=isNow?'var(--teal-light)':rowIdx%2===1?'var(--bg2)':'var(--bg)';
+    html+=`<tr>
+      <td style="padding:5px 6px;font-weight:${isNow?'700':'500'};color:${isNow?'var(--teal)':'var(--text)'};white-space:nowrap;position:sticky;left:0;background:${rowBg};z-index:1">${LV_MONTHS[mi]}${isNow?' ▶':''}</td>
+      <td style="padding:3px 2px">${inp(mi,'mh',row.mh,'100')}</td>
+      <td style="padding:3px 2px">${inp(mi,'ma',row.ma,'10')}</td>
+      <td style="padding:3px 2px">${inp(mi,'dh',row.dh,'20')}</td>
+      <td style="padding:3px 2px">${inp(mi,'da',row.da,'5')}</td>
+      <td id="lv-${pfx}-${mi}-daily" style="padding:5px 3px;text-align:right;font-weight:700;color:var(--teal);white-space:nowrap">${daily>0?daily.toLocaleString():'—'}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table>`;
+  return html;
+}
+
+// oninput: リアルタイムで日消費量のみ更新（コピーはしない）
+function updateLvDaily(pfx,changedMi){
+  const mh=+document.getElementById('lv-'+pfx+'-'+changedMi+'-mh')?.value||0;
+  const ma=+document.getElementById('lv-'+pfx+'-'+changedMi+'-ma')?.value||0;
+  const dh=+document.getElementById('lv-'+pfx+'-'+changedMi+'-dh')?.value||0;
+  const da=+document.getElementById('lv-'+pfx+'-'+changedMi+'-da')?.value||0;
+  const el=document.getElementById('lv-'+pfx+'-'+changedMi+'-daily');
+  if(el){const d=mh*ma+dh*da;el.textContent=d>0?d.toLocaleString():'—';}
+}
+
+// onchange: 入力確定後にコピー判定。他の月が全部空なら全月に同じ値をセット
+function onLvChange(pfx,changedMi,field,value){
+  if(value==='')return;
+  const order=lvMonthOrder();
+  const firstMi=order[0]; // 今月 = テーブルの先頭行
+  // 今月（先頭行）を変更した場合は、残り11か月を常に上書きコピー
+  if(changedMi===firstMi){
+    order.slice(1).forEach(mi=>{
+      const el=document.getElementById('lv-'+pfx+'-'+mi+'-'+field);
+      if(el){
+        el.value=value;
+        updateLvDaily(pfx,mi);
+      }
+    });
+  }
+  updateLvDaily(pfx,changedMi);
+}
+
+function fillLivestockForm(){
+  LV_TYPES.forEach(pfx=>{
+    document.getElementById('lv-table-'+pfx).innerHTML=buildLvTable(pfx);
+  });
+}
+
+function saveLivestock(){
+  if(!currentFarmId){alert('先に農場を選択してください');return;}
+  const fd=farmData();if(!fd.lv)fd.lv={};
+  LV_TYPES.forEach(pfx=>{
+    const rows=Array(12).fill(null).map(()=>({mh:'',ma:'',dh:'',da:''}));
+    for(let mi=0;mi<12;mi++){
+      rows[mi]={
+        mh:document.getElementById('lv-'+pfx+'-'+mi+'-mh')?.value||'',
+        ma:document.getElementById('lv-'+pfx+'-'+mi+'-ma')?.value||'',
+        dh:document.getElementById('lv-'+pfx+'-'+mi+'-dh')?.value||'',
+        da:document.getElementById('lv-'+pfx+'-'+mi+'-da')?.value||'',
+      };
+    }
+    fd.lv['monthly_'+pfx]=rows;
+  });
+  persist();
+  document.getElementById('lv-msg').textContent='保存しました ✓';
+  setTimeout(()=>document.getElementById('lv-msg').textContent='',2500);
+}
+
+// Returns kg/day for a silage type in a given month (0-based)
+function getDailyForMonth(silageType, monthIdx){
+  const l=lv();
+  const pfx=silageType==='DCS'?'dcs':silageType==='GS2'?'gs2':silageType==='GS3'?'gs3':'gs1';
+  const rows=l['monthly_'+pfx];
+  if(!rows||!rows[monthIdx])return 0;
+  const r=rows[monthIdx];
+  return(r.mh||0)*(r.ma||0)+(r.dh||0)*(r.da||0);
+}
+
+// Returns total kg consumed from today until stock runs out, using monthly schedule
+// Returns {days, endDate} 
+function calcDaysRemaining(silageType, stockKg){
+  if(stockKg<=0)return{days:0,endDate:null};
+  const today=new Date();
+  let remaining=stockKg;
+  let days=0;
+  const maxDays=366;
+  for(let d=0;d<maxDays;d++){
+    const date=new Date(today);date.setDate(today.getDate()+d);
+    const mi=date.getMonth();
+    const daily=getDailyForMonth(silageType,mi);
+    if(daily<=0){days=d;break;}// no plan = stop counting
+    remaining-=daily;
+    if(remaining<=0){days=d+1+(remaining/daily);break;}
+    days=d+1;
+  }
+  const endDate=new Date(today);endDate.setDate(today.getDate()+Math.floor(days));
+  return{days:Math.floor(days),endDate};
+}
+
+// For home forecast: GS total (GS1+GS2+GS3 combined) vs DCS
+function getDailyFromLVGroup(group){
+  const mi=new Date().getMonth();
+  if(group==='dcs')return getDailyForMonth('DCS',mi);
+  return getDailyForMonth('GS1',mi)+getDailyForMonth('GS2',mi)+getDailyForMonth('GS3',mi);
+}
+function getDailyFromLV(silageType){
+  return getDailyForMonth(silageType,new Date().getMonth());
+}
+
+/* ---- visit ---- */
+function renderVisitPage(){
+  const sel=document.getElementById('vis-silo');
+  const prev=sel.value;
+  sel.innerHTML=silos().map(s=>`<option value="${s.id}">${s.name}（${TYPE_META[s.type].label}）</option>`).join('');
+  if(prev)sel.value=prev;
+  sel.onchange=updateVisitFields;
+  updateVisitFields();renderVisitHistory();
+}
+function updateVisitFields(){
+  const id=+document.getElementById('vis-silo').value;
+  const s=silos().find(x=>x.id===id);
+  const el=document.getElementById('vis-fields');
+  if(!s){el.innerHTML='';return;}
+  if(s.type==='banker')el.innerHTML=`<div class="form-block"><label>総パネル枚数（登録値: ${s.panels}枚）</label>
+    <input type="number" id="vis-panels-total" value="${s.panels}" readonly style="background:var(--bg3);color:var(--text3)"></div>
+    <div class="form-block"><label>消費済みパネル枚数</label><input type="number" id="vis-panels-used" inputmode="numeric" placeholder="例: 9" oninput="calcVisit()"></div>`;
+  else if(s.type==='stack')el.innerHTML=`<div class="form-block"><label>総長さ（登録値: ${s.len}m）</label>
+    <input type="number" id="vis-stack-total" value="${s.len}" readonly style="background:var(--bg3);color:var(--text3)"></div>
+    <div class="form-block"><label>消費済み長さ (m)</label><input type="number" id="vis-stack-used" inputmode="decimal" placeholder="例: 20" oninput="calcVisit()"></div>`;
+  else el.innerHTML=`<div class="form-block"><label>総個数（登録値: ${s.count}個）</label>
+    <input type="number" id="vis-wrap-total" value="${s.count}" readonly style="background:var(--bg3);color:var(--text3)"></div>
+    <div class="form-block"><label>消費済み個数</label><input type="number" id="vis-wrap-used" inputmode="numeric" placeholder="例: 15" oninput="calcVisit()"></div>`;
+  document.getElementById('vis-calc-result').style.display='none';
+}
+function calcVisitStock(s){
+  if(s.type==='banker'){
+    const used=+document.getElementById('vis-panels-used').value||0,rem=Math.max(0,(s.panels||0)-used);
+    const vol=rem*(s.plen||0)*(s.width||0)*(s.h||0),dmKg=vol*(s.density||0),actKg=s.dm>0?dmKg/(s.dm/100):0;
+    return{remPanels:rem,usedPanels:used,vol,netDM:dmKg*(1-(s.loss||0)/100),netAct:actKg*(1-(s.loss||0)/100),type:'banker'};
+  }else if(s.type==='stack'){
+    const used=+document.getElementById('vis-stack-used').value||0,rem=Math.max(0,(s.len||0)-used);
+    const vol=(s.tw+s.bw)/2*(s.h||0)*rem*(s.coef||0.8),dmKg=vol*(s.density||0),actKg=s.dm>0?dmKg/(s.dm/100):0;
+    return{remLen:rem,usedLen:used,vol,netDM:dmKg*(1-(s.loss||0)/100),netAct:actKg*(1-(s.loss||0)/100),type:'stack'};
+  }else{
+    const used=+document.getElementById('vis-wrap-used').value||0,rem=Math.max(0,(s.count||0)-used);
+    const actKg=rem*(s.wt||0),dmKg=actKg*((s.dm||0)/100);
+    return{remCount:rem,usedCount:used,netDM:dmKg*(1-(s.loss||0)/100),netAct:actKg*(1-(s.loss||0)/100),type:'wrap'};
+  }
+}
+function calcVisit(){
+  const id=+document.getElementById('vis-silo').value;
+  const s=silos().find(x=>x.id===id);if(!s)return;
+  const r=calcVisitStock(s);
+  const daily=getDailyFromLV(s.silage);
+  const monthResult=calcDaysRemaining(s.silage,r.netAct);
+  const days=monthResult.days;
+  const dimStr=r.type==='banker'?`残り ${r.remPanels}パネル`:r.type==='stack'?`残り ${fmt(r.remLen,1)}m`:`残り ${r.remCount}個`;
+  const untilStr=monthResult.endDate?monthResult.endDate.toLocaleDateString('ja-JP',{month:'long',day:'numeric'}):'';
+  document.getElementById('vis-calc-result').style.display='block';
+  document.getElementById('vis-calc-result').innerHTML=`
+    <div class="res-row"><span class="rl">${dimStr}</span><span class="rv">${fmt(r.vol||0,1)} m³</span></div>
+    <div class="res-row"><span class="rl">現物在庫</span><span class="rv">${fmt(r.netAct/1000,2)} t</span></div>
+    <div class="res-row"><span class="rl">乾物在庫</span><span class="rv">${fmt(r.netDM/1000,2)} t DM</span></div>
+    <hr class="divider">
+    <div class="res-row"><span class="rl">今月の日消費量</span><span class="rv">${daily>0?fmtN(daily)+' kg/日':'未設定'}</span></div>
+    <div class="res-row"><span class="rl">推定残り日数（月別計画）</span><span class="rv hi">${daily>0?days+'日 （'+untilStr+'ごろ）':'—（給与量未設定）'}</span></div>`;
+  return{r,days,s};
+}
+function saveVisit(){
+  const res=calcVisit();if(!res)return;
+  const {r,days,s}=res;
+  const date=document.getElementById('vis-date').value;
+  if(!date){alert('訪問日を入力してください');return;}
+  const rec={id:Date.now(),date,siloId:s.id,siloName:s.name,siloType:s.type,silage:s.silage,
+    netDM:r.netDM,netAct:r.netAct,days,note:document.getElementById('vis-note').value,
+    dim:r.type==='banker'?{rem:r.remPanels,used:r.usedPanels,unit:'パネル'}:r.type==='stack'?{rem:r.remLen,used:r.usedLen,unit:'m'}:{rem:r.remCount,used:r.usedCount,unit:'個'}};
+  farmData().visits.push(rec);persist();
+  document.getElementById('vis-msg').textContent='記録しました ✓';setTimeout(()=>document.getElementById('vis-msg').textContent='',2500);
+  renderVisitHistory();
+}
+function deleteVisit(id){const fd=farmData();fd.visits=fd.visits.filter(v=>v.id!==id);persist();renderVisitHistory();}
+function renderVisitHistory(){
+  const el=document.getElementById('visit-history');
+  const vs=visits();
+  if(!vs.length){el.innerHTML='<div class="empty-sub">まだ記録がありません</div>';return;}
+  el.innerHTML=[...vs].sort((a,b)=>b.date.localeCompare(a.date)).map(v=>`
+    <div class="visit-card">
+      <div class="visit-date"><span>${v.date}</span><span class="badge ${isGS(v.silage)?'b-grass':'b-corn'}">${v.silage}</span>
+        <button class="btn btn-danger btn-sm" style="flex:0;padding:4px 10px;font-size:12px;margin-left:auto" onclick="deleteVisit(${v.id})"><i class="ti ti-trash"></i></button></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${v.siloName}</div>
+      <div class="visit-rows">
+        <div class="vr"><span>現物在庫</span><strong>${fmt(v.netAct/1000,2)} t</strong></div>
+        <div class="vr"><span>乾物在庫</span><strong>${fmt(v.netDM/1000,2)} t DM</strong></div>
+        <div class="vr"><span>${v.dim?`${v.dim.rem}${v.dim.unit}残 / ${v.dim.used}${v.dim.unit}消費`:''}</span></div>
+        <div class="vr"><span>推定残り日数</span><strong style="color:var(--teal)">${v.days!=null?Math.floor(v.days)+'日':'—'}</strong></div>
+      </div>
+      ${v.note?`<div class="visit-note">${v.note}</div>`:''}
+    </div>`).join('');
+}
+
+/* ---- home ---- */
+function renderHome(){
+  const hasFarm=!!currentFarmId;
+  document.getElementById('no-farm-msg').style.display=hasFarm?'none':'block';
+  document.getElementById('home-content').style.display=hasFarm?'block':'none';
+  if(!hasFarm)return;
+
+  const ss=silos();
+
+  // 各サイロについて「最新訪問記録の在庫量」があればそちらを使う
+  function effectiveStock(s){
+    const latest=visits().filter(v=>v.siloId===s.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    if(latest&&latest.netAct!=null){
+      return{netDM:latest.netDM||0, netAct:latest.netAct||0, fromVisit:true, visitDate:latest.date, visitDays:latest.days};
+    }
+    return{netDM:s.netDM||0, netAct:s.netAct||0, fromVisit:false};
+  }
+
+  const byType={GS1:{dm:0,act:0},GS2:{dm:0,act:0},GS3:{dm:0,act:0},sorghum:{dm:0,act:0},DCS:{dm:0,act:0}};
+  ss.forEach(s=>{
+    const st=effectiveStock(s);
+    if(byType[s.silage]){byType[s.silage].dm+=st.netDM;byType[s.silage].act+=st.netAct;}
+  });
+  const gsDM=byType.GS1.dm+byType.GS2.dm+byType.GS3.dm+byType.sorghum.dm;
+  const gsAct=byType.GS1.act+byType.GS2.act+byType.GS3.act+byType.sorghum.act;
+  const dcsDM=byType.DCS.dm,dcsAct=byType.DCS.act;
+  const gsDaily=getDailyFromLVGroup('gs'),dcsDaily=getDailyFromLVGroup('dcs');
+  const gsResult=calcDaysRemaining('GS1',gsAct);
+  const dcsResult=calcDaysRemaining('DCS',dcsAct);
+
+  function forecastHTML(result,label,daily,hasData){
+    if(!hasData||daily<=0)return`<div class="forecast-banner ok" style="opacity:.5"><div class="fb-right"><div class="fb-label">${label} 残り日数</div><div class="fb-sub">給与量を「給与設定」から入力してください</div></div></div>`;
+    const d=result.days;
+    const cls=d>=60?'ok':d>=30?'warn':'danger';
+    const untilStr=result.endDate?result.endDate.toLocaleDateString('ja-JP',{month:'long',day:'numeric'}):'';
+    return`<div class="forecast-banner ${cls}"><div class="fb-days ${cls}">${d}</div><div class="fb-right">
+      <div class="fb-label">${label} 残り日数（月別計画ベース）</div>
+      <div class="fb-sub">${untilStr}ごろまで / 今月の日消費 ${fmtN(daily)}kg</div></div></div>`;
+  }
+  document.getElementById('forecast-gs').innerHTML=forecastHTML(gsResult,'グラスサイレージ合計',gsDaily,gsAct>0);
+  document.getElementById('forecast-dcs').innerHTML=forecastHTML(dcsResult,'デントコーンサイレージ',dcsDaily,dcsAct>0);
+
+  const spDefs=[{key:'GS1',label:'GS1（1番草）',cls:'gs1'},{key:'GS2',label:'GS2（2番草）',cls:'gs2'},
+    {key:'GS3',label:'GS3（3番草）',cls:'gs3'},{key:'sorghum',label:'ソルガム',cls:'sorghum'},
+    {key:'DCS',label:'DCS（デントコーン）',cls:'corn',full:true}];
+  let scHTML='<div class="species-grid">';
+  spDefs.forEach(sp=>{const d=byType[sp.key];
+    scHTML+=`<div class="sp-card${sp.full?' full':''}"><div class="sp-head ${sp.cls}">${sp.label}</div>
+      <div class="sp-body"><div class="sp-row"><span class="sl">乾物</span><span class="sv hi">${fmt(d.dm/1000,2)} t DM</span></div>
+      <div class="sp-row"><span class="sl">現物</span><span class="sv">${fmt(d.act/1000,2)} t</span></div></div></div>`;
+  });
+  scHTML+=`</div><div style="display:flex;justify-content:space-between;padding:6px 4px 4px;font-size:12px;color:var(--text2)">
+    <span>GS合計</span><span style="font-weight:700;color:var(--teal)">${fmt(gsDM/1000,2)} t DM</span></div>
+  <div style="font-size:11px;color:var(--text3);padding:0 4px 12px">※訪問記録がある場合はその在庫量を反映</div>`;
+  document.getElementById('species-cards').innerHTML=scHTML;
+
+  let html='';
+  ['banker','stack','wrap'].forEach(tp=>{
+    const m=TYPE_META[tp],group=ss.filter(s=>s.type===tp);
+    const totDM=group.reduce((a,s)=>a+effectiveStock(s).netDM,0);
+    const totAct=group.reduce((a,s)=>a+effectiveStock(s).netAct,0);
+    html+=`<div class="storage-section"><div class="storage-header ${m.cls}">
+      <span class="storage-title ${m.cls}">${m.label}</span><span class="storage-count ${m.cls}">${group.length}基</span></div>
+      <div class="storage-totals">
+        <div class="st-cell"><div class="st-cell-lbl">合計乾物</div><div class="st-cell-val hi">${fmt(totDM/1000,2)} t DM</div></div>
+        <div class="st-cell"><div class="st-cell-lbl">合計現物</div><div class="st-cell-val">${fmt(totAct/1000,2)} t</div></div>
+      </div>`;
+    if(!group.length)html+=`<div class="empty-sub">まだ登録がありません</div>`;
+    else group.slice().reverse().forEach(s=>{
+      const st=effectiveStock(s);
+      const visitBadge=st.fromVisit
+        ?`<span style="font-size:10px;background:var(--teal-light);color:var(--teal);padding:1px 6px;border-radius:8px;font-weight:700">📋 ${st.visitDate}</span>`
+        :`<span style="font-size:10px;color:var(--text3)">登録値</span>`;
+      html+=`<div class="silo-item"><div class="silo-item-head">
+        <span class="silo-item-name">${s.name}</span>
+        <span class="badge ${isGS(s.silage)?'b-grass':'b-corn'}">${s.silage}</span>
+        <span class="silo-item-sub">DM ${s.dm||'—'}%</span></div>
+        <div class="silo-item-vals">
+          <div class="siv"><span>乾物</span><strong>${fmt(st.netDM/1000,2)} t DM</strong></div>
+          <div class="siv"><span>現物</span><strong>${fmt(st.netAct/1000,2)} t</strong></div>
+          ${s.grass?`<div class="siv"><span>草種</span><strong>${grassLabel(s.grass)}</strong></div>`:''}
+          ${s.opened?`<div class="siv"><span>開封日</span><strong>${s.opened}</strong></div>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;border-top:0.5px solid var(--border);font-size:11px">
+          <span style="color:var(--text3)">在庫ソース:</span>${visitBadge}
+          ${st.fromVisit&&st.visitDays!=null?`<span style="margin-left:auto;color:var(--teal);font-weight:700">残り${Math.floor(st.visitDays)}日</span>`:''}
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById('home-storage').innerHTML=html;
+}
+
+const GRASS_LABEL={orchard:'オーチャード',timothy:'チモシー',orch_tim:'オーチャード＋チモシー',orch_leg:'オーチャード＋マメ科',tim_leg:'チモシー＋マメ科'};
+function grassLabel(v){return GRASS_LABEL[v]||'';}
+
+/* ---- list ---- */
+function renderList(){
+  const el=document.getElementById('list-silos'),ss=silos();
+  if(!ss.length){el.innerHTML='<div style="text-align:center;padding:3rem 1rem;color:var(--text3);font-size:13px">登録済みの貯蔵庫がありません</div>';return;}
+  el.innerHTML=[...ss].reverse().map(s=>{
+    const grassRow=s.grass?`<div class="siv"><span>草種</span><strong>${grassLabel(s.grass)}</strong></div>`:'';
+    const seededRow=s.seeded?`<div class="siv"><span>播種日</span><strong>${s.seeded}</strong></div>`:'';
+    const harvestRow=s.harvest?`<div class="siv"><span>刈り取り日</span><strong>${s.harvest}</strong></div>`:'';
+    const growRow=s.growDays!=null?`<div class="siv"><span>生育日数</span><strong>${s.growDays}日</strong></div>`:'';
+    const openedRow=s.opened?`<div class="siv"><span>開封日</span><strong>${s.opened}</strong></div>`:'';
+    const storeRow=s.storeDays!=null?`<div class="siv"><span>貯蔵日数</span><strong>${s.storeDays}日</strong></div>`:'';
+    const varietyRow=s.varietyDays?`<div class="siv"><span>品種生育日数</span><strong>${s.varietyDays}日</strong></div>`:'';
+    const densityRow=s.density?`<div class="siv"><span>密度</span><strong>${s.density} kgDM/m³</strong></div>`:'';
+    const extraRow=s.type==='banker'?`<div class="siv"><span>パネル</span><strong>${s.panels}枚 × ${s.plen}m</strong></div>`
+      :s.type==='stack'?`<div class="siv"><span>長さ</span><strong>${s.len}m</strong></div>`
+      :`<div class="siv"><span>個数</span><strong>${s.count}個 × ${s.wt}kg</strong></div>`;
+    return`<div class="silo-item" style="margin-bottom:10px">
+      <div class="silo-item-head"><span class="silo-item-name">${s.name}</span>
+        <span class="badge ${isGS(s.silage)?'b-grass':'b-corn'}">${s.silage}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:auto">${TYPE_META[s.type].label}</span></div>
+      <div class="silo-item-vals" style="margin-bottom:10px">
+        <div class="siv"><span>乾物在庫</span><strong>${fmt((s.netDM||0)/1000,2)} t DM</strong></div>
+        <div class="siv"><span>現物在庫</span><strong>${fmt((s.netAct||0)/1000,2)} t</strong></div>
+        <div class="siv"><span>DM%</span><strong>${s.dm||'—'}%</strong></div>
+        <div class="siv"><span>ロス率</span><strong>${s.loss||0}%</strong></div>
+        ${grassRow}${varietyRow}${seededRow}${harvestRow}${growRow}${openedRow}${storeRow}${densityRow}${extraRow}
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-sm" style="flex:0" onclick="openEdit(${s.id})"><i class="ti ti-edit"></i> 編集</button>
+        <button class="btn btn-danger btn-sm" style="flex:0" onclick="deleteSilo(${s.id})"><i class="ti ti-trash"></i> 削除</button>
+      </div></div>`;
+  }).join('');
+}
+
+/* ---- edit ---- */
+let editId=null;
+function openEdit(id){
+  const s=silos().find(x=>x.id===id);if(!s)return;
+  editId=id;
+  document.getElementById('edit-title').textContent=`編集：${s.name}`;
+  document.getElementById('edit-calc-result').style.display='none';
+  document.getElementById('edit-msg').textContent='';
+  const qOpts=`<option value="">手動入力</option><option value="260">DCS 非常に良い（260）</option><option value="240">DCS 良い/GS 非常に良い（240）</option><option value="220">DCS 普通/GS 良い（220）</option><option value="200">DCS 悪い/GS 普通（200）</option><option value="180">DCS かなり悪い/GS 悪い（180）</option><option value="150">GS かなり悪い（150）</option>`;
+  let body=`<div class="form-block"><label>名称</label><input id="ed-name" type="text" value="${s.name}"></div>
+    <div class="form-block"><label>サイレージ種類</label><select id="ed-silage">
+      <option value="GS1"${s.silage==='GS1'?' selected':''}>GS1</option><option value="GS2"${s.silage==='GS2'?' selected':''}>GS2</option>
+      <option value="GS3"${s.silage==='GS3'?' selected':''}>GS3</option><option value="DCS"${s.silage==='DCS'?' selected':''}>DCS</option>
+      <option value="sorghum"${s.silage==='sorghum'?' selected':''}>ソルガム</option></select></div>
+    <div class="form-block"><label>草種</label><select id="ed-grass">
+      <option value=""${!s.grass?' selected':''}>— 選択してください —</option>
+      <option value="orchard"${s.grass==='orchard'?' selected':''}>オーチャード</option>
+      <option value="timothy"${s.grass==='timothy'?' selected':''}>チモシー</option>
+      <option value="orch_tim"${s.grass==='orch_tim'?' selected':''}>オーチャード＋チモシー</option>
+      <option value="orch_leg"${s.grass==='orch_leg'?' selected':''}>オーチャード＋マメ科</option>
+      <option value="tim_leg"${s.grass==='tim_leg'?' selected':''}>チモシー＋マメ科</option>
+    </select></div>
+    <div class="form-row-2">
+      <div class="form-block"><label>播種日</label><input type="date" id="ed-seeded" value="${s.seeded||''}" onchange="calcDays('ed')"></div>
+      <div class="form-block"><label>刈り取り日</label><input type="date" id="ed-harvest" value="${s.harvest||''}" onchange="calcDays('ed')"></div>
+    </div>
+    <div class="form-block"><label>生育日数</label>
+      <div id="ed-growdays" style="padding:10px 12px;background:var(--bg2);border-radius:var(--radius);font-size:14px;font-weight:700;color:var(--teal)">${s.growDays!=null?s.growDays+'日':'—'}</div>
+    </div>
+    ${s.silage==='DCS'?`<div class="form-block"><label>品種の生育日数（日）</label><input type="number" id="ed-variety-days" inputmode="numeric" value="${s.varietyDays||''}"></div>`:''}
+    <div class="form-row-2">
+      <div class="form-block"><label>開封日</label><input type="date" id="ed-opened" value="${s.opened||''}" onchange="calcDays('ed')"></div>
+      <div class="form-block"><label>貯蔵日数</label>
+        <div id="ed-storedays" style="padding:10px 12px;background:var(--bg2);border-radius:var(--radius);font-size:14px;font-weight:700;color:var(--purple-text)">${s.storeDays!=null?s.storeDays+'日':'—'}</div>
+      </div>
+    </div>`;
+  if(s.type==='banker')body+=`<div class="form-row-2"><div class="form-block"><label>横 (m)</label><input type="number" id="ed-width" inputmode="decimal" value="${s.width||''}"></div>
+    <div class="form-block"><label>高さ (m)</label><input type="number" id="ed-h" inputmode="decimal" value="${s.h||''}"></div></div>
+    <div class="form-row-2"><div class="form-block"><label>1パネル長さ (m)</label><input type="number" id="ed-plen" inputmode="decimal" value="${s.plen||''}"></div>
+    <div class="form-block"><label>総パネル枚数</label><input type="number" id="ed-panels" inputmode="numeric" value="${s.panels||''}"></div></div>`;
+  else if(s.type==='stack')body+=`<div class="form-row-2"><div class="form-block"><label>上面幅 (m)</label><input type="number" id="ed-tw" inputmode="decimal" value="${s.tw||''}"></div>
+    <div class="form-block"><label>底面幅 (m)</label><input type="number" id="ed-bw" inputmode="decimal" value="${s.bw||''}"></div></div>
+    <div class="form-row-2"><div class="form-block"><label>高さ (m)</label><input type="number" id="ed-h" inputmode="decimal" value="${s.h||''}"></div>
+    <div class="form-block"><label>総長さ (m)</label><input type="number" id="ed-len" inputmode="decimal" value="${s.len||''}"></div></div>
+    <div class="form-block"><label>形状係数</label><select id="ed-coef"><option value="0.75"${s.coef==0.75?' selected':''}>0.75</option><option value="0.77"${s.coef==0.77?' selected':''}>0.77</option><option value="0.80"${(!s.coef||s.coef==0.80)?' selected':''}>0.80</option></select></div>`;
+  else body+=`<div class="form-row-2"><div class="form-block"><label>1個あたり重量 (kg)</label><input type="number" id="ed-wt" inputmode="numeric" value="${s.wt||''}"></div>
+    <div class="form-block"><label>総個数</label><input type="number" id="ed-count" inputmode="numeric" value="${s.count||''}"></div></div>`;
+  if(s.type!=='wrap')body+=`<div class="form-block"><label>充填品質プリセット</label>
+    <select id="ed-quality" onchange="document.getElementById('ed-density').value=this.value||document.getElementById('ed-density').value">${qOpts}</select></div>
+    <div class="form-block"><label>密度 (kgDM/m³)</label><input type="number" id="ed-density" inputmode="numeric" value="${s.density||''}"></div>`;
+  body+=`<div class="form-row-2"><div class="form-block"><label>DM%（乾物率）</label><input type="number" id="ed-dm" inputmode="decimal" value="${s.dm||''}"></div>
+    <div class="form-block"><label>ロス率 (%)</label><input type="number" id="ed-loss" inputmode="decimal" value="${s.loss||''}"></div></div>`;
+  document.getElementById('edit-form-body').innerHTML=body;
+  document.getElementById('edit-sheet').classList.add('open');
+}
+function closeEdit(){document.getElementById('edit-sheet').classList.remove('open');editId=null;}
+function calcEditValues(){
+  const ss=silos(),s=ss.find(x=>x.id===editId);if(!s)return null;
+  const dm=+document.getElementById('ed-dm').value||0,loss=+document.getElementById('ed-loss').value||0;
+  if(s.type==='banker'){
+    const w=+document.getElementById('ed-width').value||0,h=+document.getElementById('ed-h').value||0;
+    const plen=+document.getElementById('ed-plen').value||0,panels=+document.getElementById('ed-panels').value||0;
+    const den=+document.getElementById('ed-density').value||0,vol=plen*panels*w*h,dmKg=vol*den,actKg=dm>0?dmKg/(dm/100):0;
+    return{vol,netDM:dmKg*(1-loss/100),netAct:actKg*(1-loss/100),dmKg,actKg,den,w,h,plen,panels,dm,loss,type:'banker'};
+  }else if(s.type==='stack'){
+    const tw=+document.getElementById('ed-tw').value||0,bw=+document.getElementById('ed-bw').value||0;
+    const h=+document.getElementById('ed-h').value||0,len=+document.getElementById('ed-len').value||0;
+    const coef=+document.getElementById('ed-coef').value||0.8,den=+document.getElementById('ed-density').value||0;
+    const vol=(tw+bw)/2*h*len*coef,dmKg=vol*den,actKg=dm>0?dmKg/(dm/100):0;
+    return{vol,netDM:dmKg*(1-loss/100),netAct:actKg*(1-loss/100),dmKg,actKg,den,tw,bw,h,len,coef,dm,loss,type:'stack'};
+  }else{
+    const wt=+document.getElementById('ed-wt').value||0,cnt=+document.getElementById('ed-count').value||0;
+    const actKg=wt*cnt,dmKg=actKg*(dm/100);
+    return{netDM:dmKg*(1-loss/100),netAct:actKg*(1-loss/100),wt,cnt,dm,loss,type:'wrap'};
+  }
+}
+function calcEdit(){
+  const r=calcEditValues();if(!r)return;
+  const el=document.getElementById('edit-calc-result');el.style.display='block';
+  if(r.type==='wrap')el.innerHTML=`<div class="res-row"><span class="rl">現物（ロス差引）</span><span class="rv hi">${fmt(r.netAct/1000,2)} t</span></div>
+    <div class="res-row"><span class="rl">乾物（ロス差引）</span><span class="rv hi">${fmt(r.netDM/1000,2)} t DM</span></div>`;
+  else el.innerHTML=`<div class="res-row"><span class="rl">容積</span><span class="rv">${fmt(r.vol,1)} m³</span></div>
+    <div class="res-row"><span class="rl">現物（ロス差引）</span><span class="rv hi">${fmt(r.netAct/1000,2)} t</span></div>
+    <div class="res-row"><span class="rl">乾物（ロス差引）</span><span class="rv hi">${fmt(r.netDM/1000,2)} t DM</span></div>`;
+}
+function saveEdit(){
+  calcEdit();const r=calcEditValues();if(!r)return;
+  const idx=silos().findIndex(x=>x.id===editId);if(idx<0)return;
+  const s=farmData().silos[farmData().silos.findIndex(x=>x.id===editId)];
+  s.name=document.getElementById('ed-name').value||s.name;
+  s.silage=document.getElementById('ed-silage').value;
+  s.grass=document.getElementById('ed-grass').value;
+  s.seeded=document.getElementById('ed-seeded')?.value||'';
+  s.harvest=document.getElementById('ed-harvest')?.value||'';
+  s.opened=document.getElementById('ed-opened')?.value||'';
+  s.varietyDays=document.getElementById('ed-variety-days')?.value||'';
+  s.growDays=diffDays(s.seeded,s.harvest);
+  s.storeDays=diffDays(s.harvest,s.opened);
+  s.dm=r.dm;s.loss=r.loss;s.netDM=r.netDM;s.netAct=r.netAct;
+  if(r.type==='banker'){s.width=r.w;s.h=r.h;s.plen=r.plen;s.panels=r.panels;s.density=r.den;}
+  else if(r.type==='stack'){s.tw=r.tw;s.bw=r.bw;s.h=r.h;s.len=r.len;s.coef=r.coef;s.density=r.den;}
+  else{s.wt=r.wt;s.count=r.cnt;}
+  persist();document.getElementById('edit-msg').textContent='保存しました ✓';
+  setTimeout(()=>{closeEdit();renderList();renderHome();},900);
+}
+
+/* ---- farm edit ---- */
+let editFarmId=null;
+function openFarmEdit(id){
+  const f=farms.find(x=>x.id===id);if(!f)return;
+  editFarmId=id;
+  document.getElementById('fe-name').value=f.name;
+  document.getElementById('fe-note').value=f.note||'';
+  document.getElementById('fe-msg').textContent='';
+  document.getElementById('farm-edit-sheet').classList.add('open');
+}
+function closeFarmEdit(){document.getElementById('farm-edit-sheet').classList.remove('open');editFarmId=null;}
+function saveFarmEdit(){
+  const name=document.getElementById('fe-name').value.trim();
+  if(!name){document.getElementById('fe-msg').textContent='農場名を入力してください';return;}
+  const f=farms.find(x=>x.id===editFarmId);if(!f)return;
+  f.name=name;f.note=document.getElementById('fe-note').value.trim();
+  persist();
+  if(currentFarmId===editFarmId)document.getElementById('current-farm-name').innerHTML=`<i class="ti ti-building-farm"></i> ${f.name}`;
+  document.getElementById('fe-msg').textContent='保存しました ✓';
+  setTimeout(()=>{closeFarmEdit();renderFarmList();},800);
+}
+
+/* ---- init ---- */
+document.getElementById('today-lbl').textContent=new Date().toLocaleDateString('ja-JP',{month:'long',day:'numeric'});
+document.getElementById('vis-date').value=new Date().toISOString().split('T')[0];
+load();
+if(currentFarmId){const f=farms.find(x=>x.id===currentFarmId);if(f)document.getElementById('current-farm-name').innerHTML=`<i class="ti ti-building-farm"></i> ${f.name}`;}
+renderHome();
+
+// PWA install banner for Android (iOS uses "ホーム画面に追加")
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('pwa-banner').style.display='flex';
+});
+document.getElementById('pwa-install-btn').addEventListener('click',()=>{
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.then(()=>{deferredPrompt=null;document.getElementById('pwa-banner').style.display='none';});}
+});
+document.getElementById('pwa-close-btn').addEventListener('click',()=>{
+  document.getElementById('pwa-banner').style.display='none';
+});
+
+// iOS install hint (show once)
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone=window.navigator.standalone;
+const shownBefore=localStorage.getItem('pwa_ios_hint');
+if(isIOS&&!isStandalone&&!shownBefore){
+  document.getElementById('ios-banner').style.display='flex';
+  localStorage.setItem('pwa_ios_hint','1');
+}
+document.getElementById('ios-close-btn').addEventListener('click',()=>{
+  document.getElementById('ios-banner').style.display='none';
+});
+
+// Register service worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
