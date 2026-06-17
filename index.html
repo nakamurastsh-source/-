@@ -533,7 +533,7 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px}
     <label style="display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border:1.5px dashed var(--border2);border-radius:var(--radius-lg);cursor:pointer;font-size:14px;color:var(--text2);margin-bottom:12px">
       <span style="font-size:32px">📷</span>
       <span>写真を撮影 / ライブラリから選択</span>
-      <input type="file" id="photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="onPhotoSelected(event)">
+      <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="onPhotoSelected(event)">
     </label>
     <!-- preview -->
     <div id="photo-preview" style="display:none;margin-bottom:12px">
@@ -889,8 +889,8 @@ function getDailyForMonth(silageType, monthIdx){
 }
 
 // Returns total kg consumed from today until stock runs out, using monthly schedule
-// Returns {days, endDate} 
-function calcDaysRemaining(silageType, stockKg){
+// dailyFn(monthIdx) => kg/day for that month. Returns {days, endDate}
+function calcDaysRemainingByDailyFn(stockKg, dailyFn){
   if(stockKg<=0)return{days:0,endDate:null};
   const today=new Date();
   let remaining=stockKg;
@@ -899,7 +899,7 @@ function calcDaysRemaining(silageType, stockKg){
   for(let d=0;d<maxDays;d++){
     const date=new Date(today);date.setDate(today.getDate()+d);
     const mi=date.getMonth();
-    const daily=getDailyForMonth(silageType,mi);
+    const daily=dailyFn(mi);
     if(daily<=0){days=d;break;}// no plan = stop counting
     remaining-=daily;
     if(remaining<=0){days=d+1+(remaining/daily);break;}
@@ -907,6 +907,17 @@ function calcDaysRemaining(silageType, stockKg){
   }
   const endDate=new Date(today);endDate.setDate(today.getDate()+Math.floor(days));
   return{days:Math.floor(days),endDate};
+}
+
+// Backward-compatible wrapper for a single silage type (used by visit page)
+function calcDaysRemaining(silageType, stockKg){
+  return calcDaysRemainingByDailyFn(stockKg, mi=>getDailyForMonth(silageType,mi));
+}
+
+// For GS combined group (GS1+GS2+GS3 summed daily consumption)
+function calcDaysRemainingGSGroup(stockKg){
+  return calcDaysRemainingByDailyFn(stockKg, mi=>
+    getDailyForMonth('GS1',mi)+getDailyForMonth('GS2',mi)+getDailyForMonth('GS3',mi));
 }
 
 // For home forecast: GS total (GS1+GS2+GS3 combined) vs DCS
@@ -1037,7 +1048,7 @@ function renderHome(){
   const gsAct=byType.GS1.act+byType.GS2.act+byType.GS3.act+byType.sorghum.act;
   const dcsDM=byType.DCS.dm,dcsAct=byType.DCS.act;
   const gsDaily=getDailyFromLVGroup('gs'),dcsDaily=getDailyFromLVGroup('dcs');
-  const gsResult=calcDaysRemaining('GS1',gsAct);
+  const gsResult=calcDaysRemainingGSGroup(gsAct);
   const dcsResult=calcDaysRemaining('DCS',dcsAct);
 
   function forecastHTML(result,label,daily,hasData){
