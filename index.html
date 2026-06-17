@@ -72,14 +72,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Hiragino Kaku
 .sec-lbl:first-child{margin-top:4px}
 
 /* forecast */
-.forecast-banner{border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.forecast-banner{border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;min-width:0}
 .forecast-banner.ok{background:var(--teal-light)}
 .forecast-banner.warn{background:var(--warn-bg)}
 .forecast-banner.danger{background:var(--red-bg)}
-.fb-days{font-size:36px;font-weight:700;line-height:1}
+.fb-days{font-size:36px;font-weight:700;line-height:1;flex-shrink:0}
 .fb-days.ok{color:var(--teal)}.fb-days.warn{color:var(--warn-text)}.fb-days.danger{color:var(--red-text)}
-.fb-label{font-size:12px;color:var(--text2);margin-bottom:2px}
-.fb-sub{font-size:11px;color:var(--text3)}
+.fb-right{min-width:0;overflow:hidden}
+.fb-label{font-size:12px;color:var(--text2);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-sub{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* species */
 .species-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
@@ -198,7 +199,7 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px}
     <div id="forecast-dcs"></div>
     <div class="sec-lbl">種類別在庫</div>
     <div id="species-cards"></div>
-    <div class="sec-lbl">貯蔵方法別在庫</div>
+    <div class="sec-lbl">サイレージ種類別 貯蔵庫一覧</div>
     <div id="home-storage"></div>
   </div>
 </div>
@@ -1047,21 +1048,32 @@ function renderHome(){
   const gsDM=byType.GS1.dm+byType.GS2.dm+byType.GS3.dm+byType.sorghum.dm;
   const gsAct=byType.GS1.act+byType.GS2.act+byType.GS3.act+byType.sorghum.act;
   const dcsDM=byType.DCS.dm,dcsAct=byType.DCS.act;
-  const gsDaily=getDailyFromLVGroup('gs'),dcsDaily=getDailyFromLVGroup('dcs');
-  const gsResult=calcDaysRemainingGSGroup(gsAct);
+  const dcsDaily=getDailyFromLVGroup('dcs');
   const dcsResult=calcDaysRemaining('DCS',dcsAct);
 
-  function forecastHTML(result,label,daily,hasData){
-    if(!hasData||daily<=0)return`<div class="forecast-banner ok" style="opacity:.5"><div class="fb-right"><div class="fb-label">${label} 残り日数</div><div class="fb-sub">給与量を「給与設定」から入力してください</div></div></div>`;
+  function forecastHTML(result,label,daily,hasData,compact){
+    if(!hasData||daily<=0)return`<div class="forecast-banner ok" style="opacity:.5${compact?';padding:10px 14px':''}"><div class="fb-right"><div class="fb-label">${label} 残り日数</div><div class="fb-sub">給与量を入力してください</div></div></div>`;
     const d=result.days;
     const cls=d>=60?'ok':d>=30?'warn':'danger';
     const untilStr=result.endDate?result.endDate.toLocaleDateString('ja-JP',{month:'long',day:'numeric'}):'';
-    return`<div class="forecast-banner ${cls}"><div class="fb-days ${cls}">${d}</div><div class="fb-right">
-      <div class="fb-label">${label} 残り日数（月別計画ベース）</div>
+    return`<div class="forecast-banner ${cls}"${compact?' style="padding:10px 14px"':''}><div class="fb-days ${cls}"${compact?' style="font-size:28px"':''}>${d}</div><div class="fb-right">
+      <div class="fb-label">${label} 残り日数</div>
       <div class="fb-sub">${untilStr}ごろまで / 今月の日消費 ${fmtN(daily)}kg</div></div></div>`;
   }
-  document.getElementById('forecast-gs').innerHTML=forecastHTML(gsResult,'グラスサイレージ合計',gsDaily,gsAct>0);
-  document.getElementById('forecast-dcs').innerHTML=forecastHTML(dcsResult,'デントコーンサイレージ',dcsDaily,dcsAct>0);
+
+  // GS1/GS2/GS3 individual forecasts (compact, side by side on wider screens / stacked on mobile)
+  const gs1Daily=getDailyFromLV('GS1'), gs2Daily=getDailyFromLV('GS2'), gs3Daily=getDailyFromLV('GS3');
+  const gs1Result=calcDaysRemaining('GS1',byType.GS1.act);
+  const gs2Result=calcDaysRemaining('GS2',byType.GS2.act);
+  const gs3Result=calcDaysRemaining('GS3',byType.GS3.act);
+
+  let gsHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+  gsHTML+=forecastHTML(gs1Result,'GS1',gs1Daily,byType.GS1.act>0,true);
+  gsHTML+=forecastHTML(gs2Result,'GS2',gs2Daily,byType.GS2.act>0,true);
+  gsHTML+='</div>';
+  gsHTML+=forecastHTML(gs3Result,'GS3',gs3Daily,byType.GS3.act>0,true);
+  document.getElementById('forecast-gs').innerHTML=gsHTML;
+  document.getElementById('forecast-dcs').innerHTML=forecastHTML(dcsResult,'デントコーンサイレージ',dcsDaily,dcsAct>0,false);
 
   const spDefs=[{key:'GS1',label:'GS1（1番草）',cls:'gs1'},{key:'GS2',label:'GS2（2番草）',cls:'gs2'},
     {key:'GS3',label:'GS3（3番草）',cls:'gs3'},{key:'sorghum',label:'ソルガム',cls:'sorghum'},
@@ -1078,12 +1090,16 @@ function renderHome(){
   document.getElementById('species-cards').innerHTML=scHTML;
 
   let html='';
-  ['banker','stack','wrap'].forEach(tp=>{
-    const m=TYPE_META[tp],group=ss.filter(s=>s.type===tp);
+  const groupDefs=[
+    {key:'gs', label:'グラスサイレージ', cls:'stack', match:s=>isGS(s.silage)},
+    {key:'dcs', label:'デントコーンサイレージ', cls:'banker', match:s=>s.silage==='DCS'}
+  ];
+  groupDefs.forEach(g=>{
+    const group=ss.filter(g.match);
     const totDM=group.reduce((a,s)=>a+effectiveStock(s).netDM,0);
     const totAct=group.reduce((a,s)=>a+effectiveStock(s).netAct,0);
-    html+=`<div class="storage-section"><div class="storage-header ${m.cls}">
-      <span class="storage-title ${m.cls}">${m.label}</span><span class="storage-count ${m.cls}">${group.length}基</span></div>
+    html+=`<div class="storage-section"><div class="storage-header ${g.cls}">
+      <span class="storage-title ${g.cls}">${g.label}</span><span class="storage-count ${g.cls}">${group.length}基</span></div>
       <div class="storage-totals">
         <div class="st-cell"><div class="st-cell-lbl">合計乾物</div><div class="st-cell-val hi">${fmt(totDM/1000,2)} t DM</div></div>
         <div class="st-cell"><div class="st-cell-lbl">合計現物</div><div class="st-cell-val">${fmt(totAct/1000,2)} t</div></div>
@@ -1097,6 +1113,7 @@ function renderHome(){
       html+=`<div class="silo-item"><div class="silo-item-head">
         <span class="silo-item-name">${s.name}</span>
         <span class="badge ${isGS(s.silage)?'b-grass':'b-corn'}">${s.silage}</span>
+        <span style="font-size:10px;color:var(--text3)">${TYPE_META[s.type].label}</span>
         <span class="silo-item-sub">DM ${s.dm||'—'}%</span></div>
         <div class="silo-item-vals">
           <div class="siv"><span>乾物</span><strong>${fmt(st.netDM/1000,2)} t DM</strong></div>
