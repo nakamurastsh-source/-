@@ -170,6 +170,27 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px}
 .nav-btn.active{color:var(--text)}
 .nav-btn i{font-size:22px}
 </style>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDtLGEbAp-KjrIbXfMBFQwgefq-lD7sIhQ",
+    authDomain: "silage-app.firebaseapp.com",
+    projectId: "silage-app",
+    storageBucket: "silage-app.firebasestorage.app",
+    messagingSenderId: "687565638010",
+    appId: "1:687565638010:web:b688433751431e1683eec3"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+
+  // Expose to global scope for use in the main script below
+  window.__firebase = { db, doc, setDoc, getDoc, onSnapshot, serverTimestamp };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
 </head>
 <body>
 <div class="app">
@@ -438,6 +459,57 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px}
 
 <!-- ===== LIST ===== -->
 <div id="page-list" class="page">
+  <div class="sec-lbl">クラウド同期</div>
+  <div class="livestock-card" style="margin-bottom:16px">
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+      同期コードを発行すると、別のiPhoneで同じコードを入力するだけでデータが共有されます。機種変更時もこのコードで復元できます。
+    </p>
+    <div id="sync-no-code" style="display:none">
+      <div class="btn-row" style="margin-bottom:8px">
+        <button class="btn btn-primary" onclick="createSyncCode()">☁️ 同期コードを発行する</button>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--text3);margin:8px 0">または既存のコードをお持ちの場合</div>
+      <div class="form-row-2" style="margin-bottom:0">
+        <input type="text" id="sync-code-input" placeholder="例：ABCD-1234" style="text-transform:uppercase">
+        <button class="btn" onclick="connectSyncCode()">接続する</button>
+      </div>
+    </div>
+    <div id="sync-has-code" style="display:none">
+      <div style="background:var(--teal-light);border-radius:var(--radius);padding:14px;text-align:center;margin-bottom:10px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">あなたの同期コード</div>
+        <div id="sync-code-display" style="font-size:24px;font-weight:700;color:var(--teal);letter-spacing:2px"></div>
+      </div>
+      <div class="btn-row" style="margin-bottom:8px">
+        <button class="btn" onclick="copySyncCode()">📋 コードをコピー</button>
+        <button class="btn" onclick="pushToCloud()">⬆️ 今すぐアップロード</button>
+      </div>
+      <div class="btn-row" style="margin-bottom:8px">
+        <button class="btn" onclick="pullFromCloud()">⬇️ クラウドから取得</button>
+        <button class="btn btn-danger" style="flex:1" onclick="disconnectSyncCode()">同期を解除</button>
+      </div>
+      <div id="sync-status" style="font-size:11px;color:var(--text3);text-align:center"></div>
+    </div>
+    <div id="sync-msg" class="success-msg"></div>
+  </div>
+
+  <div class="sec-lbl">ファイルバックアップ</div>
+  <div class="livestock-card" style="margin-bottom:16px">
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+      データをファイルに書き出して保存することもできます。iCloud Drive、Googleドライブ、メールなどに保存してください。
+    </p>
+    <div class="btn-row" style="margin-bottom:8px">
+      <button class="btn btn-primary" onclick="exportBackup()">📤 バックアップを書き出す</button>
+    </div>
+    <div class="btn-row">
+      <label class="btn" style="text-align:center;cursor:pointer;margin:0">
+        📥 バックアップを読み込む
+        <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none" onchange="importBackup(event)">
+      </label>
+    </div>
+    <div id="backup-msg" class="success-msg"></div>
+    <div id="backup-info" style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center"></div>
+  </div>
+
   <div class="sec-lbl">登録済み貯蔵庫</div>
   <div id="list-silos"></div>
 </div>
@@ -580,6 +652,13 @@ function persist(){
   localStorage.setItem(SK_FARMS,JSON.stringify(farms));
   localStorage.setItem(SK_DATA,JSON.stringify(allData));
   if(currentFarmId)localStorage.setItem('silage_current_farm',currentFarmId);
+  schedulePush();
+}
+let _pushTimer=null;
+function schedulePush(){
+  if(typeof syncCode==='undefined'||!syncCode)return;
+  clearTimeout(_pushTimer);
+  _pushTimer=setTimeout(()=>{ if(typeof pushToCloud==='function')pushToCloud(); },1500);
 }
 function farmData(fid){
   fid=fid||currentFarmId;
@@ -1137,6 +1216,8 @@ function grassLabel(v){return GRASS_LABEL[v]||'';}
 
 /* ---- list ---- */
 function renderList(){
+  updateBackupInfo();
+  refreshSyncUI();
   const el=document.getElementById('list-silos'),ss=silos();
   if(!ss.length){el.innerHTML='<div style="text-align:center;padding:3rem 1rem;color:var(--text3);font-size:13px">登録済みの貯蔵庫がありません</div>';return;}
   el.innerHTML=[...ss].reverse().map(s=>{
@@ -1314,6 +1395,7 @@ function savePhotos(){
     }
     alert('ストレージの空き容量が少ないため、古い写真を一部削除しました。');
   }
+  schedulePush();
 }
 
 function onPhotoSelected(e){
@@ -1442,11 +1524,236 @@ function openPhotoViewer(id){
   document.body.appendChild(ov);
 }
 
+/* ---- backup export / import ---- */
+function exportBackup(){
+  const backup={
+    app:'silage-inventory',
+    version:4,
+    exportedAt:new Date().toISOString(),
+    farms: JSON.parse(localStorage.getItem(SK_FARMS)||'[]'),
+    data: JSON.parse(localStorage.getItem(SK_DATA)||'{}'),
+    photos: JSON.parse(localStorage.getItem(SK_PHOTOS)||'[]'),
+    currentFarmId: localStorage.getItem('silage_current_farm')||null
+  };
+  const json=JSON.stringify(backup,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const dateStr=new Date().toISOString().split('T')[0];
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`silage-backup-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  document.getElementById('backup-msg').textContent='バックアップファイルを書き出しました ✓';
+  setTimeout(()=>document.getElementById('backup-msg').textContent='',3000);
+  updateBackupInfo();
+}
+
+function importBackup(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const backup=JSON.parse(ev.target.result);
+      if(backup.app!=='silage-inventory'){
+        alert('このファイルはサイレージ在庫管理のバックアップではありません。');
+        return;
+      }
+      const farmCount=(backup.farms||[]).length;
+      const photoCount=(backup.photos||[]).length;
+      if(!confirm(`バックアップを読み込みます。\n農場数: ${farmCount}\n写真数: ${photoCount}\n書き出し日: ${backup.exportedAt?new Date(backup.exportedAt).toLocaleString('ja-JP'):'不明'}\n\n現在のデータは上書きされます。続けますか？`)){
+        return;
+      }
+      localStorage.setItem(SK_FARMS, JSON.stringify(backup.farms||[]));
+      localStorage.setItem(SK_DATA, JSON.stringify(backup.data||{}));
+      localStorage.setItem(SK_PHOTOS, JSON.stringify(backup.photos||[]));
+      if(backup.currentFarmId)localStorage.setItem('silage_current_farm', backup.currentFarmId);
+      document.getElementById('backup-msg').textContent='復元しました ✓ 再読み込みします...';
+      setTimeout(()=>location.reload(),1200);
+    }catch(err){
+      alert('ファイルの読み込みに失敗しました。正しいバックアップファイルか確認してください。');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+function updateBackupInfo(){
+  const el=document.getElementById('backup-info');
+  if(!el)return;
+  const fCount=farms.length;
+  const pCount=photoStore.length;
+  let siloCount=0;
+  Object.values(allData).forEach(d=>siloCount+=(d.silos||[]).length);
+  el.textContent=`現在のデータ: 農場${fCount}件 / 貯蔵庫${siloCount}件 / 写真${pCount}枚`;
+}
+
+/* ---- cloud sync (Firebase Firestore) ---- */
+const SK_SYNC_CODE='silage_sync_code_v4';
+let syncCode=localStorage.getItem(SK_SYNC_CODE)||null;
+let firebaseReady=false;
+let unsubscribeSync=null;
+
+window.addEventListener('firebase-ready',()=>{
+  firebaseReady=true;
+  refreshSyncUI();
+});
+
+function refreshSyncUI(){
+  const noCode=document.getElementById('sync-no-code');
+  const hasCode=document.getElementById('sync-has-code');
+  if(!noCode||!hasCode)return;
+  if(syncCode){
+    noCode.style.display='none';
+    hasCode.style.display='block';
+    document.getElementById('sync-code-display').textContent=syncCode;
+  }else{
+    noCode.style.display='block';
+    hasCode.style.display='none';
+  }
+}
+
+function genSyncCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s='';
+  for(let i=0;i<8;i++){
+    if(i===4)s+='-';
+    s+=chars[Math.floor(Math.random()*chars.length)];
+  }
+  return s;
+}
+
+function gatherAllData(){
+  return{
+    app:'silage-inventory',
+    version:4,
+    updatedAt:new Date().toISOString(),
+    farms: JSON.parse(localStorage.getItem(SK_FARMS)||'[]'),
+    data: JSON.parse(localStorage.getItem(SK_DATA)||'{}'),
+    photos: JSON.parse(localStorage.getItem(SK_PHOTOS)||'[]'),
+    currentFarmId: localStorage.getItem('silage_current_farm')||null
+  };
+}
+
+function applyAllData(backup){
+  localStorage.setItem(SK_FARMS, JSON.stringify(backup.farms||[]));
+  localStorage.setItem(SK_DATA, JSON.stringify(backup.data||{}));
+  localStorage.setItem(SK_PHOTOS, JSON.stringify(backup.photos||[]));
+  if(backup.currentFarmId)localStorage.setItem('silage_current_farm', backup.currentFarmId);
+}
+
+async function createSyncCode(){
+  if(!firebaseReady){alert('クラウド接続を準備中です。少し待ってから再度お試しください。');return;}
+  const code=genSyncCode();
+  try{
+    const {db,doc,setDoc,serverTimestamp}=window.__firebase;
+    const payload=gatherAllData();
+    await setDoc(doc(db,'silage_sync',code), {...payload, savedAt:serverTimestamp()});
+    syncCode=code;
+    localStorage.setItem(SK_SYNC_CODE,code);
+    refreshSyncUI();
+    startSyncListener();
+    document.getElementById('sync-msg').textContent='同期コードを発行しました ✓ 他の端末でこのコードを入力してください';
+    setTimeout(()=>document.getElementById('sync-msg').textContent='',4000);
+  }catch(err){
+    alert('クラウド接続に失敗しました: '+err.message);
+  }
+}
+
+async function connectSyncCode(){
+  if(!firebaseReady){alert('クラウド接続を準備中です。少し待ってから再度お試しください。');return;}
+  const input=document.getElementById('sync-code-input').value.trim().toUpperCase();
+  if(!input){alert('同期コードを入力してください');return;}
+  try{
+    const {db,doc,getDoc}=window.__firebase;
+    const snap=await getDoc(doc(db,'silage_sync',input));
+    if(!snap.exists()){
+      alert('このコードのデータが見つかりません。コードを確認してください。');
+      return;
+    }
+    const remote=snap.data();
+    const localHas=(farms&&farms.length>0)||Object.keys(allData).length>0;
+    if(localHas&&!confirm('このiPhoneに既存のデータがあります。クラウドのデータで上書きしますか？\n（このiPhoneのデータは失われます）')){
+      return;
+    }
+    applyAllData(remote);
+    syncCode=input;
+    localStorage.setItem(SK_SYNC_CODE,input);
+    document.getElementById('sync-msg').textContent='接続しました ✓ 再読み込みします...';
+    setTimeout(()=>location.reload(),1200);
+  }catch(err){
+    alert('接続に失敗しました: '+err.message);
+  }
+}
+
+async function pushToCloud(){
+  if(!syncCode||!firebaseReady)return;
+  try{
+    const {db,doc,setDoc,serverTimestamp}=window.__firebase;
+    const payload=gatherAllData();
+    await setDoc(doc(db,'silage_sync',syncCode), {...payload, savedAt:serverTimestamp()});
+    document.getElementById('sync-status').textContent='アップロード完了: '+new Date().toLocaleTimeString('ja-JP');
+    document.getElementById('sync-msg').textContent='クラウドにアップロードしました ✓';
+    setTimeout(()=>document.getElementById('sync-msg').textContent='',3000);
+  }catch(err){
+    alert('アップロードに失敗しました: '+err.message);
+  }
+}
+
+async function pullFromCloud(){
+  if(!syncCode||!firebaseReady)return;
+  if(!confirm('クラウドのデータでこのiPhoneのデータを上書きします。続けますか？'))return;
+  try{
+    const {db,doc,getDoc}=window.__firebase;
+    const snap=await getDoc(doc(db,'silage_sync',syncCode));
+    if(!snap.exists()){alert('クラウドにデータがありません');return;}
+    applyAllData(snap.data());
+    document.getElementById('sync-msg').textContent='取得しました ✓ 再読み込みします...';
+    setTimeout(()=>location.reload(),1000);
+  }catch(err){
+    alert('取得に失敗しました: '+err.message);
+  }
+}
+
+function disconnectSyncCode(){
+  if(!confirm('同期を解除します。このiPhoneのデータはそのまま残りますが、クラウドとの連携は切れます。続けますか？'))return;
+  if(unsubscribeSync){unsubscribeSync();unsubscribeSync=null;}
+  syncCode=null;
+  localStorage.removeItem(SK_SYNC_CODE);
+  refreshSyncUI();
+}
+
+function copySyncCode(){
+  if(!syncCode)return;
+  navigator.clipboard?.writeText(syncCode).then(()=>{
+    document.getElementById('sync-msg').textContent='コピーしました ✓';
+    setTimeout(()=>document.getElementById('sync-msg').textContent='',2000);
+  }).catch(()=>{
+    alert('コード: '+syncCode);
+  });
+}
+
+function startSyncListener(){
+  if(!syncCode||!firebaseReady)return;
+  if(unsubscribeSync)unsubscribeSync();
+  const {db,doc,onSnapshot}=window.__firebase;
+  unsubscribeSync=onSnapshot(doc(db,'silage_sync',syncCode), snap=>{
+    if(snap.exists()){
+      const remote=snap.data();
+      document.getElementById('sync-status')&&(document.getElementById('sync-status').textContent='最終更新: '+(remote.updatedAt?new Date(remote.updatedAt).toLocaleString('ja-JP'):'不明'));
+    }
+  });
+}
+
 /* ---- init ---- */
 document.getElementById('today-lbl').textContent=new Date().toLocaleDateString('ja-JP',{month:'long',day:'numeric'});
 document.getElementById('vis-date').value=new Date().toISOString().split('T')[0];
 load();
 loadPhotos();
+window.addEventListener('firebase-ready',()=>{ if(syncCode) startSyncListener(); }, {once:false});
 if(currentFarmId){const f=farms.find(x=>x.id===currentFarmId);if(f)document.getElementById('current-farm-name').innerHTML=`<i class="ti ti-building-farm"></i> ${f.name}`;}
 renderHome();
 
